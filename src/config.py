@@ -9,8 +9,21 @@ INDEX_DIR: Path = BASE_DIR / "storage" / "chroma"
 ModelBackend = Literal["openai", "ollama"]
 
 MODEL_BACKEND: ModelBackend = "openai"
-LLM_MODEL_NAME: str = "gpt-4.1-mini"
-EMBED_MODEL_NAME: str = "text-embedding-3-small"
+
+# Default model names per backend.
+OPENAI_CHAT_MODEL: str = "gpt-4.1-mini"
+OPENAI_EMBED_MODEL: str = "text-embedding-3-small"
+
+OLLAMA_CHAT_MODEL: str = "qwen2.5:0.5b"
+OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
+
+# Convenience aliases used by the LLM factories, resolved based on MODEL_BACKEND.
+if MODEL_BACKEND == "openai":
+    LLM_MODEL_NAME: str = OPENAI_CHAT_MODEL
+    EMBED_MODEL_NAME: str = OPENAI_EMBED_MODEL
+else:
+    LLM_MODEL_NAME = OLLAMA_CHAT_MODEL
+    EMBED_MODEL_NAME = OLLAMA_EMBED_MODEL
 
 CHUNK_SIZE: int = 800
 CHUNK_OVERLAP: int = 120

@@ -27,7 +27,8 @@ The app is intentionally console‑based and multi‑turn to keep the focus on R
 - **Tech stack**
   - Python 3.10
   - LangChain / LangGraph
-  - OpenAI (chat + embeddings)
+  - Ollama (primary backend; open source, free, low latency)
+  - OpenAI (optional backend for comparison)
   - ChromaDB vector store
 
 - **Key modules**
@@ -123,17 +124,17 @@ This yields clauses like “NDA – Term and Termination”, “DPA – Data Bre
 
 ### 3.3 Embedding and LLM models
 
-- **Embedding model**
-  - Default: OpenAI `text-embedding-3-small`
-  - Rationale: good semantic performance on dense legal text with efficient cost profile.
+- **Default (Ollama) backend**
+  - **Embedding model**: `nomic-embed-text`
+    - Open‑source, high‑quality embeddings suitable for dense legal text.
+  - **LLM model**: `qwen2.5:0.5b`
+    - Lightweight, open‑source chat model with low latency for interactive CLI use.
+  - Both models are served locally via the Ollama container defined in `docker-compose.yml`.
 
-- **LLM model**
-  - Default: `gpt-4.1-mini` via OpenAI.
-  - Used for:
-    - Query analysis / routing.
-    - Answer drafting.
-    - Risk assessment.
-  - Temperature is set low (e.g. `0.1`) in `make_chat_model` to prioritize determinism and grounding over creativity.
+- **Optional OpenAI backend**
+  - **Embedding model**: `text-embedding-3-small`
+  - **LLM model**: `gpt-4.1-mini`
+  - You can switch backend by changing `MODEL_BACKEND` in `src/config.py` to `"openai"` or `"ollama"`.
 
 ### 3.4 Retrieval mechanism
 
@@ -165,25 +166,24 @@ This provides a lightweight, deterministic “re‑ranking” effect without add
   - `gpt-4.1-mini`
   - `text-embedding-3-small`
 
-### 4.2 Environment and dependencies
+### 4.2 Environment and dependencies (Poetry + Ollama)
 
-From the project root:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-pip install --upgrade pip
-pip install .
-```
-
-Or, if you prefer to use `pyproject.toml` directly:
+From the project root, create and install the environment using **Poetry**:
 
 ```bash
-pip install -e .
+poetry install
 ```
 
-Set your OpenAI credentials (for example in `.env` or shell env):
+This will create an isolated virtual environment and install all dependencies from `pyproject.toml`.
+
+Then start the **Ollama** service (which will serve `nomic-embed-text` and `qwen2.5:0.5b` locally):
+
+```bash
+docker compose up ollama
+```
+
+By default the project is configured to use the Ollama backend (open source, free, and low‑latency).
+If you also want to experiment with OpenAI, set your credentials (for example in `.env` or shell env) and switch `MODEL_BACKEND` to `"openai"`:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -196,7 +196,7 @@ export OPENAI_API_KEY="sk-..."
 From the project root (with the virtualenv activated):
 
 ```bash
-python -m src.app
+poetry run python -m src.app
 ```
 
 You should see:
