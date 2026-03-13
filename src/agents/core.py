@@ -9,18 +9,12 @@ from langchain_core.messages import AIMessage, HumanMessage
 from src.llm.factory import make_chat_model
 
 
-QueryType = Literal[
-    "fact_lookup",
-    "cross_agreement_compare",
-    "risk_summary",
-    "other",
-]
+QueryType = Literal["fact_lookup", "cross_agreement_compare", "risk_summary", "other"]
 
 
 @dataclass
 class QueryAnalysis:
     query_type: QueryType
-    focus_areas: List[str]
     doc_targets: List[str]
 
 
@@ -31,68 +25,36 @@ async def analyze_query(
     model = make_chat_model()
     history_summary = "\n".join(m.content for m in history[-4:]) if history else "None"
     prompt = (
-        "You are a legal query classifier for contract Q&A over the following corpus:\n"
+        "You are a routing agent for a legal contract Q&A system.\n"
+        "The corpus contains four agreements:\n"
         "- NDA between Acme and Vendor\n"
         "- Vendor Services Agreement\n"
         "- Service Level Agreement (SLA)\n"
         "- Data Processing Agreement (DPA)\n\n"
         "Your job is to:\n"
-        "1) classify the user's question into a coarse query_type, and\n"
-        "2) identify 1–3 focus_areas that will be used to steer retrieval, and\n"
-        "3) choose which agreement(s) are most relevant via doc_targets.\n\n"
+        "1) classify the user's question into a query_type, and\n"
+        "2) choose which agreement(s) are most relevant via doc_targets.\n\n"
         "Set query_type as exactly one of:\n"
-        "- fact_lookup: direct questions answerable from a single clause in one agreement.\n"
-        '  Examples: "What is the notice period for terminating the NDA?", '
-        '"What is the uptime commitment in the SLA?", '
-        '"Which law governs the Vendor Services Agreement?".\n'
-        "- cross_agreement_compare: questions that require comparing or reconciling terms "
-        "across multiple agreements.\n"
-        '  Examples: "Which agreement governs data breach notification timelines?", '
-        '"Are there conflicting governing laws across agreements?".\n'
-        "- risk_summary: questions that primarily ask about risk, exposure, or legal strategy.\n"
-        '  Examples: "Are there any legal risks related to liability exposure?", '
-        '"Identify any clauses that could pose financial risk to Acme Corp.", '
-        '"Is there any unlimited liability in these agreements?", '
-        '"What happens if Vendor delays breach notification beyond 72 hours?".\n'
-        "- other: anything else (chitchat, drafting entire new contracts, etc.).\n\n"
+        "- fact_lookup: direct questions answerable from a clause in one agreement.\n"
+        "- cross_agreement_compare: questions that compare or reconcile terms across multiple agreements.\n"
+        "- risk_summary: questions primarily about risk, exposure, or legal strategy.\n"
+        "- other: anything else.\n\n"
         "Set doc_targets to a list containing one or more of:\n"
-        "- nda            (for NDA between Acme and Vendor)\n"
-        "- vendor_services (for the main Vendor Services Agreement)\n"
+        "- nda             (for the NDA between Acme and Vendor)\n"
+        "- vendor_services (for the Vendor Services Agreement)\n"
         "- service_level   (for the SLA)\n"
-        "- dpa            (for the Data Processing Agreement)\n"
-        "- all            (for questions that clearly span all agreements, especially risk_summary)\n\n"
+        "- dpa             (for the Data Processing Agreement)\n"
+        "- all             (for questions that clearly span all agreements, especially risk_summary).\n\n"
         "Examples:\n"
-        '- "What is the notice period for terminating the NDA?" → query_type: fact_lookup, '
-        'focus_areas: ["termination"], doc_targets: ["nda"]\n'
-        '- "What is the uptime commitment in the SLA?" → query_type: fact_lookup, '
-        'focus_areas: ["uptime_sla"], doc_targets: ["service_level"]\n'
-        '- "Which law governs the Vendor Services Agreement?" → query_type: fact_lookup, '
-        'focus_areas: ["governing_law"], doc_targets: ["vendor_services"]\n'
+        '- "What is the notice period for terminating the NDA?" → query_type: fact_lookup, doc_targets: ["nda"]\n'
+        '- "What is the uptime commitment in the SLA?" → query_type: fact_lookup, doc_targets: ["service_level"]\n'
+        '- "Which law governs the Vendor Services Agreement?" → query_type: fact_lookup, doc_targets: ["vendor_services"]\n'
         '- "Which agreement governs data breach notification timelines?" → query_type: cross_agreement_compare, '
-        'focus_areas: ["data_breach"], doc_targets: ["dpa", "vendor_services", "service_level"]\n'
-        '- "Are there any legal risks related to liability exposure?" → query_type: risk_summary, '
-        'focus_areas: ["liability"], doc_targets: ["all"]\n\n'
-        "For focus_areas, choose 1–3 of the following that best match the question:\n"
-        "- termination\n"
-        "- confidentiality\n"
-        "- liability\n"
-        "- indemnification\n"
-        "- governing_law\n"
-        "- data_breach\n"
-        "- uptime_sla\n"
-        "- remedies\n"
-        "- subprocessors\n"
-        "- other\n\n"
-        "Examples of focus_areas mapping:\n"
-        "- Questions about notice periods or contract end → termination\n"
-        "- Questions about secrecy, sharing data, or subcontractors → confidentiality, subprocessors\n"
-        "- Questions about caps, unlimited liability, or financial risk → liability\n"
-        "- Questions about which law applies → governing_law\n"
-        "- Questions about breach notification or 72 hours → data_breach\n"
-        "- Questions about uptime or credits if SLA is not met → uptime_sla, remedies\n\n"
+        'doc_targets: ["dpa", "vendor_services", "service_level"]\n'
+        '- "Are there any legal risks related to liability exposure?" → query_type: risk_summary, doc_targets: ["all"]\n\n'
         f"Recent history:\n{history_summary}\n\n"
         f"Question: {question}\n\n"
-        "Respond as JSON with keys query_type, focus_areas, and doc_targets."
+        "Respond as JSON with keys query_type and doc_targets."
     )
     msg = await model.ainvoke(prompt)
     import json
@@ -100,102 +62,52 @@ async def analyze_query(
     try:
         data = json.loads(msg.content)  # type: ignore[arg-type]
         qtype: QueryType = data.get("query_type", "fact_lookup")
-        focus = data.get("focus_areas") or []
         doc_targets = data.get("doc_targets") or []
     except Exception:
         qtype = "fact_lookup"
-        focus = []
         doc_targets = ["all"]
-    # Normalize doc_targets to a list of strings.
+
     if isinstance(doc_targets, str):
         doc_targets_list: List[str] = [doc_targets]
     else:
         doc_targets_list = [str(t) for t in doc_targets]
     if not doc_targets_list:
-        # Sensible default: for risk_summary use all, otherwise fall back to all.
         doc_targets_list = ["all"]
-    return QueryAnalysis(
-        query_type=qtype,
-        focus_areas=list(focus),
-        doc_targets=doc_targets_list,
-    )
+
+    return QueryAnalysis(query_type=qtype, doc_targets=doc_targets_list)
 
 
-async def draft_answer(question: str, docs: Sequence[Document]) -> str:
-    model = make_chat_model()
-    context = "\n\n".join(
-        f"[{i+1}] {d.metadata.get('source')}, section: {d.metadata.get('section_title')}\n{d.page_content}"
-        for i, d in enumerate(docs)
-    )
-    prompt = (
-        "You are a legal contracts analyst.\n"
-        "Answer the question using ONLY the context clauses below.\n"
-        "Quote key clauses briefly and refer to them as [1], [2], etc. where relevant.\n"
-        "When you rely on a clause, your answer MUST:\n"
-        '- Include the bracket reference next to the relevant sentence, e.g. "... 30 days[1]."\n'
-        "- At the end, add a 'Citations used:' block, one per line, in the exact format:\n"
-        "  [n] filename.txt, section: <section title>\n"
-        "For example:\n"
-        "  The Notice Period for terminating the NDA is 30 days[1].\n"
-        "  Citations used:\n"
-        "  [1] nda_acme_vendor.txt, section: Term and Termination\n\n"
-        f"Context:\n{context}\n\nQuestion: {question}"
-    )
-    msg = await model.ainvoke(prompt)
-    return msg.content  # type: ignore[return-value]
-
-
-async def assess_risks(question: str, docs: Sequence[Document]) -> str:
-    model = make_chat_model()
-    context = "\n\n".join(
-        f"[{i+1}] {d.metadata.get('source')}, section: {d.metadata.get('section_title')}\n{d.page_content}"
-        for i, d in enumerate(docs)
-    )
-    prompt = (
-        "You are a senior legal auditor reviewing a portfolio of related agreements "
-        "(e.g., NDA, Vendor Services Agreement, SLA, DPA) on behalf of Acme Corp.\n"
-        "Given the context clauses and the user's question, identify any material legal, "
-        "financial, or operational risks.\n\n"
-        "Interpret 'risk indicators' as specific flags or warnings in the contracts, including:\n"
-        "- Financial exposure: unlimited liability, very low liability caps (e.g., 12-month fee caps), "
-        "or caps that might not cover reasonably foreseeable damages.\n"
-        "- Legal inconsistencies: conflicting terms across agreements, such as different governing "
-        "laws (e.g., California in the NDA vs. England and Wales in the Vendor Services Agreement) "
-        "or incompatible dispute resolution frameworks.\n"
-        "- Compliance gaps: strict timelines or obligations with significant consequences if missed, "
-        "such as the 72-hour data breach notification window in the DPA, and whether other documents "
-        "align with or ignore those obligations.\n"
-        "- Unfavorable terms: 'sole and exclusive' remedies (e.g., in the SLA) that prevent Acme "
-        "from seeking additional damages or alternative remedies.\n"
-        "- Omissions: missing protections, such as the absence of an explicit limitation of liability "
-        "in the NDA or missing confidentiality survival language.\n\n"
-        "Pay special attention to inconsistencies across documents and situations where obligations "
-        "cannot all be satisfied at once.\n"
-        "Use metadata such as document_type and section_index and refer to clauses as [1], [2], etc.\n"
-        "Return a concise bullet list. For each bullet, include: severity (LOW/MEDIUM/HIGH), "
-        "risk category (financial_exposure, legal_inconsistency, compliance_gap, unfavorable_term, omission, other), "
-        "a short description, and the relevant clause references [1], [2], etc.\n\n"
-        f"Context:\n{context}\n\nQuestion: {question}"
-    )
-    msg = await model.ainvoke(prompt)
-    return msg.content  # type: ignore[return-value]
-
-
-async def compose_final_answer(
+async def answer_with_optional_risks(
     question: str,
-    answer_body: str,
-    risk_summary: str,
+    docs: Sequence[Document],
+    is_risk_query: bool,
 ) -> str:
-    parts: List[str] = [
-        f"Question: {question}",
-        "",
-        f"Answer:\n{answer_body}",
-    ]
-    if risk_summary.strip():
-        parts.extend(
-            [
-                "",
-                f"Risk flags:\n{risk_summary}",
-            ]
-        )
-    return "\n".join(parts)
+    model = make_chat_model()
+    context = "\n\n".join(
+        f"[{i+1}] {d.metadata.get('source')}, section: {d.metadata.get('section_title')}\n{d.page_content}"
+        for i, d in enumerate(docs)
+    )
+    risk_instructions = (
+        "Because this question is primarily about risk or exposure, you MUST also add a "
+        "'Risk flags:' section after the main answer. In that section, list concise bullet "
+        "points describing any material legal, financial, or operational risks, referencing "
+        "clauses with [1], [2], etc., where relevant.\n"
+    )
+    no_risk_instructions = (
+        "This question is not primarily about risk; do NOT add any 'Risk flags:' section. "
+        "Only answer the question and show citations.\n"
+    )
+    prompt = (
+        "You are a legal contracts analyst for Acme Corp.\n"
+        "Use ONLY the context clauses below to answer the question.\n"
+        "Quote key clauses briefly and refer to them as [1], [2], etc. where relevant.\n"
+        "Your answer MUST:\n"
+        "- Provide a clear, direct answer in plain language.\n"
+        '- Include bracket references next to the relevant sentences, e.g. "30 days[1]."\n'
+        "- At the end, add a 'Citations used:' block, one per line, in the exact format:\n"
+        "  [n] filename.txt, section: <section title>\n\n"
+        + (risk_instructions if is_risk_query else no_risk_instructions)
+        + f"Context:\n{context}\n\nQuestion: {question}"
+    )
+    msg = await model.ainvoke(prompt)
+    return msg.content  # type: ignore[return-value]

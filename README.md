@@ -8,7 +8,7 @@ The system runs as a console app and returns grounded answers with clause‑leve
 ## 1. Problem overview
 
 The goal is to assist a legal/BD user at Acme Corp in understanding and stress‑testing a vendor contract package.
-Given natural‑language questions (e.g. *“What is the uptime commitment?”*, *“Which law governs the DPA?”*, *“Are there conflicting governing laws?”*), the system should:
+Given natural‑language questions (e.g. *"What is the uptime commitment?"*, *"Which law governs the DPA?"*, *"Are there conflicting governing laws?"*), the system should:
 
 - **Ingest** the provided contracts in `problem-statement/data/*.txt`
 - **Retrieve** the most relevant clauses across all agreements
@@ -24,6 +24,52 @@ The app is intentionally console‑based and multi‑turn to keep the focus on R
 
 ## 2. Architecture overview
 
+### Architecture diagram
+
+```mermaid
+flowchart TD
+    subgraph CLI["Console App (src/app.py)"]
+        U["User Question"]
+    end
+
+    subgraph GRAPH["LangGraph Pipeline (src/graph.py)"]
+        R["Router Agent\n analyze_query()\n query_type + doc_targets"]
+        CE["Clause Extractor\n node_clause_extractor()\n filtered clauses"]
+        AR["Answer + Risk Agent\n answer_with_optional_risks()\n cited answer + risk flags"]
+    end
+
+    subgraph INGEST["Ingestion (src/ingest/core.py)"]
+        D1["nda_acme_vendor.txt"]
+        D2["vendor_services_agreement.txt"]
+        D3["service_level_agreement.txt"]
+        D4["data_processing_agreement.txt"]
+        CH["Section-based Chunker\n tagged Document chunks"]
+    end
+
+    subgraph STORE["Vector Store"]
+        VS["ChromaDB\n storage/chroma"]
+    end
+
+    subgraph LLM["LLM Backend (src/llm/)"]
+        OL["Ollama\n qwen2.5:0.5b\n nomic-embed-text"]
+        OA["OpenAI optional\n gpt-4.1-mini\n text-embedding-3-small"]
+    end
+
+    D1 & D2 & D3 & D4 --> CH --> VS
+
+    U --> R
+    R -->|"doc_targets + is_risk_query"| CE
+    CE -->|"retrieve + filter by document_type"| VS
+    VS -->|"clauses"| CE
+    CE -->|"clauses"| AR
+    AR -->|"final_answer"| U
+
+    R -.->|"LLM call"| OL
+    AR -.->|"LLM call"| OL
+    CE -.->|"embeddings"| OL
+    OL -.->|"or"| OA
+```
+
 - **Tech stack**
   - Python 3.10
   - LangChain / LangGraph
@@ -33,62 +79,41 @@ The app is intentionally console‑based and multi‑turn to keep the focus on R
 
 - **Key modules**
   - `src/app.py` – CLI loop and conversation lifecycle
-  - `src/graph.py` – LangGraph definition and multi‑agent orchestration
-  - `src/agents/core.py` – individual agent prompts / behaviors
+  - `src/graph.py` – LangGraph definition (3‑node pipeline)
+  - `src/agents/core.py` – router prompt + answer/risk prompt
   - `src/ingest/core.py` – document loading and section‑based chunking
   - `src/retrieval/vectorstore.py` – vector store build/load helpers
-  - `src/llm/openai_api.py` & `src/llm/factory.py` – LLM and embedding factory
+  - `src/llm/factory.py` – LLM and embedding factory (Ollama or OpenAI)
   - `src/config.py` – configuration (paths, models, retrieval parameters)
 
-### 2.1 Multi‑agent orchestration (Chain‑of‑Thought)
+### 2.1 Three‑node LangGraph pipeline
 
-The system is implemented as a **LangGraph** with explicit, meaningful agents:
-
-- **Router (Orchestrator)** – `node_router`
-  - Analyzes the user question using `analyze_query` (classifier agent).
-  - Decides which **document types** are likely relevant, using filename‑based types such as:
-    - `nda_acme_vendor`
-    - `vendor_services_agreement`
-    - `service_level_agreement`
-    - `data_processing_agreement`
-  - Stores the routing decision in `GraphState.routed_doc_types`.
-
-- **Clause Extractor (Retriever)** – `node_clause_extractor`
-  - Builds or loads the Chroma vector store over pre‑chunked sections.
-  - Runs a **map‑reduce style retrieval**:
-    - Map: issues multiple queries (base question + focus‑area‑augmented variants).
-    - Reduce:
-      - Aggregates all retrieved chunks.
-      - Filters to the routed `document_type` set from the Router.
-      - De‑duplicates by `(source, section_index)` so each clause appears once.
-  - Populates `GraphState.clauses` (and `retrieved`) with the final clause set.
-
-- **Legal Analyst (Answer Agent)** – `node_legal_analyst`
-  - Consumes the extracted clauses.
-  - Drafts a grounded answer with inline references `[1], [2], …` using `draft_answer`.
-  - Appends the generated answer to the conversation history.
-
-- **Legal Auditor (Risk Agent)** – `node_legal_auditor`
-  - Consumes the same clause set.
-  - Uses a risk‑focused prompt to:
-    - Identify material legal / financial risks to Acme.
-    - Pay attention to **cross‑document inconsistencies** (e.g. conflicting governing laws, caps vs. uncapped liability, breach timelines).
-  - Returns a short bullet list with severity and clause references.
-
-- **Answer Composer** – `node_answer_composer`
-  - Combines:
-    - The Legal Analyst’s answer
-    - The Legal Auditor’s risk bullets
-  - Produces a final, user‑facing string:
-    - Question
-    - Answer
-    - Risk flags
-
-The graph flow is:
+The system uses a simple, linear **LangGraph** with three nodes:
 
 ```text
-router → clause_extractor → legal_analyst → legal_auditor → answer_composer → END
+router → clause_extractor → answer_and_risk → END
 ```
+
+- **Router** – `node_router`
+  - Calls `analyze_query` which asks the LLM to classify the question and return:
+    - `query_type` ∈ `{fact_lookup, cross_agreement_compare, risk_summary, other}`
+    - `doc_targets` ∈ `{nda, vendor_services, service_level, dpa, all}`
+  - Maps `doc_targets` to concrete filenames (e.g. `nda` → `nda_acme_vendor`).
+  - Sets `is_risk_query = true` when `query_type == "risk_summary"`.
+
+- **Clause Extractor** – `node_clause_extractor`
+  - Builds or loads the ChromaDB vector store (auto‑builds on first run).
+  - Retrieves top‑k clauses for the question.
+  - Filters results to only the `document_type`s selected by the Router (or all documents for risk queries).
+  - De‑duplicates by `(source, section_index)`.
+
+- **Answer + Risk** – `node_answer_and_risk`
+  - A single LLM call via `answer_with_optional_risks`.
+  - Always produces:
+    - A grounded answer with inline `[1], [2], …` references.
+    - A `Citations used:` block listing `[n] filename.txt, section: <title>`.
+  - When `is_risk_query` is true, also produces a `Risk flags:` section with severity‑tagged bullets.
+  - When `is_risk_query` is false, no risk section is included.
 
 ---
 
@@ -105,7 +130,7 @@ The legal corpus lives in `problem-statement/data`:
 
 `src.config.DATA_DIR` points to this directory, and `load_raw_docs` recursively loads all `*.txt` files from there.
 
-### 3.2 Chunking strategy (section / Markdown‑style)
+### 3.2 Chunking strategy (section‑based)
 
 For legal text, fixed‑size token windows can split obligations mid‑clause.
 Instead, this project uses **section‑based chunking** implemented in `simple_clause_chunk`:
@@ -119,8 +144,7 @@ Instead, this project uses **section‑based chunking** implemented in `simple_c
   - `source` – original filename
   - `document_type` – filename stem (e.g. `data_processing_agreement`)
   - `section_index` – per‑document section number
-
-This yields clauses like “NDA – Term and Termination”, “DPA – Data Breach Notification (72‑hour requirement)”, etc., which are directly consumable by the agents and easy to cite.
+  - `section_title` – human‑readable heading (e.g. `Term and Termination`)
 
 ### 3.3 Embedding and LLM models
 
@@ -144,16 +168,7 @@ This yields clauses like “NDA – Term and Termination”, “DPA – Data Bre
 - Retrieval:
   - Uses `vs.as_retriever(search_kwargs={"k": RETRIEVAL_TOP_K})`.
   - Top‑k (default 8) chosen to balance recall across multiple contracts with prompt length.
-  - Clause Extractor runs multiple retrievals for different query variants and then reduces.
-
-### 3.5 (Optional) Re‑ranking
-
-No heavy re‑ranking model is used. Instead:
-
-- Map‑reduce retrieval + strict metadata filtering by `document_type`.
-- De‑duplication by `(source, section_index)`.
-
-This provides a lightweight, deterministic “re‑ranking” effect without additional models.
+  - Risk queries use `2 × top_k` for wider cross‑agreement recall.
 
 ---
 
@@ -162,9 +177,7 @@ This provides a lightweight, deterministic “re‑ranking” effect without add
 ### 4.1 Prerequisites
 
 - Python **3.10**
-- An OpenAI API key with access to:
-  - `gpt-4.1-mini`
-  - `text-embedding-3-small`
+- Docker (for the Ollama container)
 
 ### 4.2 Environment and dependencies (Poetry + Ollama)
 
@@ -208,37 +221,43 @@ Type your question about the contracts, or /quit to exit.
 
 Then you can ask questions such as:
 
-- “What is the notice period for terminating the NDA?”
-- “What is the uptime commitment in the SLA?”
-- “Which law governs the Vendor Services Agreement?”
-- “Do confidentiality obligations survive termination of the NDA?”
-- “Which agreement governs data breach notification timelines?”
-- “Are there conflicting governing laws across agreements?”
+- "What is the notice period for terminating the NDA?"
+- "What is the uptime commitment in the SLA?"
+- "Which law governs the Vendor Services Agreement?"
+- "Do confidentiality obligations survive termination of the NDA?"
+- "Which agreement governs data breach notification timelines?"
+- "Are there conflicting governing laws across agreements?"
+- "Are there any legal risks related to liability exposure?"
 
 For each query, the system will:
 
-- Maintain conversation history.
-- Route to the relevant agreements.
-- Extract and analyze clauses.
-- Print a final answer and a risk summary.
+- Maintain conversation history across turns.
+- Route to the relevant agreement(s).
+- Retrieve and filter relevant clauses.
+- Print a grounded answer with clause‑level citations.
+- Include risk flags when the question is about risk or exposure.
 
 ---
 
 ## 6. Design choices & trade‑offs
 
-- **Multi‑agent vs. single‑agent**
-  - Chosen: explicit Router, Clause Extractor, Legal Analyst, Legal Auditor.
-  - Trade‑off: slightly more complexity vs. much clearer separation of concerns and easier debugging / observability.
+- **Simple 3‑node pipeline vs. many specialized agents**
+  - Chosen: Router → Clause Extractor → Answer+Risk (single LLM call).
+  - Trade‑off: fewer moving parts, easier to debug, while still separating routing from retrieval from generation.
 
 - **Section‑based chunking vs. fixed token windows**
   - Chosen: section / header‑based chunking.
   - Benefits: avoids splitting obligations mid‑clause; improves interpretability and citation quality.
   - Trade‑off: sections can be uneven in length, but the legal documents are relatively small, so this is acceptable.
 
-- **OpenAI models vs. local (Ollama)**
-  - Chosen: OpenAI for simplicity and stronger legal‑text performance out of the box.
-  - Trade‑off: external dependency and API cost vs. higher quality and less infra work.
-  - The `MODEL_BACKEND` config is structured so an Ollama backend could be added later.
+- **Ollama (local, open‑source) vs. OpenAI**
+  - Chosen: Ollama as the default for zero cost, low latency, and no external dependency.
+  - Trade‑off: smaller model (qwen2.5:0.5b) may be less accurate on complex legal reasoning; OpenAI backend available as a fallback.
+
+- **LLM‑based router vs. keyword heuristics**
+  - Chosen: LLM router that returns `doc_targets` and `query_type`.
+  - Benefits: handles ambiguous or novel phrasings better than static keyword rules.
+  - Trade‑off: one additional LLM call per question, but it's a small/fast model and the call is lightweight.
 
 - **Simple retrieval + metadata filtering vs. learned re‑ranker**
   - Chosen: base dense retrieval + deterministic filtering by `document_type`.
@@ -251,21 +270,21 @@ For each query, the system will:
 Basic evaluation is manual / scenario‑based, using the sample queries from the assignment:
 
 - Coverage questions:
-  - “What is the notice period for terminating the NDA?”
-  - “What is the uptime commitment in the SLA?”
-  - “Which law governs the Vendor Services Agreement?”
-  - “Which agreement governs data breach notification timelines?”
+  - "What is the notice period for terminating the NDA?"
+  - "What is the uptime commitment in the SLA?"
+  - "Which law governs the Vendor Services Agreement?"
+  - "Which agreement governs data breach notification timelines?"
 - Risk and inconsistency questions:
-  - “Are there conflicting governing laws across agreements?”
-  - “Is liability capped for breach of confidentiality?”
-  - “Is Vendor XYZ’s liability capped for data breaches?”
-  - “Are there any clauses that could pose financial risk to Acme Corp?”
+  - "Are there conflicting governing laws across agreements?"
+  - "Is liability capped for breach of confidentiality?"
+  - "Is Vendor XYZ's liability capped for data breaches?"
+  - "Are there any clauses that could pose financial risk to Acme Corp?"
 
 For each query we check:
 
 - **Grounding** – Are answers supported by the correct clauses?
 - **Citation quality** – Do the referenced clauses `[1], [2], …` correspond to relevant sections?
-- **Risk sensitivity** – Does the Legal Auditor flag key exposures (uncapped liability, conflicting laws, breach timelines)?
+- **Risk sensitivity** – Does the system flag key exposures (uncapped liability, conflicting laws, breach timelines) when asked?
 
 Due to the small corpus size, a lightweight manual checklist is sufficient and easy to run end‑to‑end.
 
@@ -285,8 +304,8 @@ Due to the small corpus size, a lightweight manual checklist is sufficient and e
 - **No formal re‑ranking / calibration**
   Retrieval is dense + heuristic filtering; a cross‑encoder or reranker could improve robustness on edge cases.
 
-- **Single‑LLM backend**
-  Only OpenAI is wired right now. A configurable backend (OpenAI vs. Ollama) and per‑agent model choice would make the system more portable.
+- **Lightweight LLM**
+  The default Ollama model (qwen2.5:0.5b) is very small; complex multi‑hop legal reasoning may benefit from a larger model. Switching to OpenAI or a bigger Ollama model is a one‑line config change.
 
 - **Evaluation depth**
   Evaluation is qualitative and based on a handful of stress‑test queries; a production‑ready system would need a richer labeled set and automated checks.

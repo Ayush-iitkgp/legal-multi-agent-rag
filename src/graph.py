@@ -8,9 +8,7 @@ from langgraph.graph import StateGraph, END
 from src.agents.core import (
     QueryAnalysis,
     analyze_query,
-    assess_risks,
-    compose_final_answer,
-    draft_answer,
+    answer_with_optional_risks,
 )
 from src.config import RETRIEVAL_TOP_K
 from src.ingest.core import chunk_corpus, load_raw_docs
@@ -27,8 +25,6 @@ class GraphState:
     routed_doc_types: List[str] = field(default_factory=list)
     retrieved: List[Document] = field(default_factory=list)
     clauses: List[Document] = field(default_factory=list)
-    answer_body: str | None = None
-    risk_summary: str | None = None
     final_answer: str | None = None
 
 
@@ -97,16 +93,7 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
     retriever = vs.as_retriever(search_kwargs={"k": top_k})
 
     base_query = state.question or ""
-    queries: List[str] = [base_query]
-
-    if state.query_analysis and state.query_analysis.focus_areas:
-        for focus in state.query_analysis.focus_areas:
-            queries.append(f"{focus} – {base_query}")
-
-    all_docs: List[Document] = []
-    for q in queries:
-        docs = retriever.invoke(q)
-        all_docs.extend(docs)
+    all_docs: List[Document] = retriever.invoke(base_query)
 
     # Reduce phase: de-duplicate and filter to routed document types, if provided.
     seen_keys: set[tuple[str, str]] = set()
@@ -146,66 +133,27 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
     return state
 
 
-async def node_legal_analyst(state: GraphState) -> GraphState:
+async def node_answer_and_risk(state: GraphState) -> GraphState:
     if not state.question:
         return state
     docs: Sequence[Document] = state.clauses or state.retrieved
-    state.answer_body = await draft_answer(state.question, docs)
-    state.messages.append(AIMessage(content=state.answer_body or ""))
-    return state
-
-
-async def node_legal_auditor(state: GraphState) -> GraphState:
-    if not state.question:
-        return state
-    docs: Sequence[Document] = state.clauses or state.retrieved
-    state.risk_summary = await assess_risks(state.question, docs)
-    return state
-
-
-async def node_answer_composer(state: GraphState) -> GraphState:
-    if not state.question:
-        return state
-    state.final_answer = await compose_final_answer(
+    answer = await answer_with_optional_risks(
         question=state.question,
-        answer_body=state.answer_body or "",
-        risk_summary=state.risk_summary or "",
+        docs=docs,
+        is_risk_query=state.is_risk_query,
     )
+    state.final_answer = answer
+    state.messages.append(AIMessage(content=answer))
     return state
-
-
-def _route_after_legal_analyst(state: GraphState) -> str:
-    """
-    Decide whether to run the risk auditor.
-
-    Risk analysis is optional and only executed when the query is primarily
-    about risk/coverage. For other query types, we skip the risk node and go
-    directly to answer composition.
-    """
-    if state.is_risk_query:
-        return "do_risk"
-    return "skip_risk"
 
 
 def build_graph() -> StateGraph:
     builder: StateGraph = StateGraph(GraphState)
     builder.add_node("router", node_router)
     builder.add_node("clause_extractor", node_clause_extractor)
-    builder.add_node("legal_analyst", node_legal_analyst)
-    builder.add_node("legal_auditor", node_legal_auditor)
-    builder.add_node("answer_composer", node_answer_composer)
+    builder.add_node("answer_and_risk", node_answer_and_risk)
     builder.set_entry_point("router")
     builder.add_edge("router", "clause_extractor")
-    builder.add_edge("clause_extractor", "legal_analyst")
-    # Conditionally run the risk auditor: only for explicit risk_summary queries.
-    builder.add_conditional_edges(
-        "legal_analyst",
-        _route_after_legal_analyst,
-        {
-            "do_risk": "legal_auditor",
-            "skip_risk": "answer_composer",
-        },
-    )
-    builder.add_edge("legal_auditor", "answer_composer")
-    builder.add_edge("answer_composer", END)
+    builder.add_edge("clause_extractor", "answer_and_risk")
+    builder.add_edge("answer_and_risk", END)
     return builder
