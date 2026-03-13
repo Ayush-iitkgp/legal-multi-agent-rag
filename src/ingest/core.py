@@ -17,9 +17,17 @@ class RawDoc:
 
 
 async def load_raw_docs(data_dir: Path | None = None) -> List[RawDoc]:
+    """
+    Load all raw text documents from the given data directory.
+
+    The project structure under `problem-statement/data` can contain multiple
+    agreements and helper files spread across subdirectories. To ensure that
+    retrieval can surface relevant context from *all* of these sources, we
+    recurse through the directory tree instead of only looking at the top level.
+    """
     base = data_dir or DATA_DIR
     docs: List[RawDoc] = []
-    for path in sorted(base.glob("*.txt")):
+    for path in sorted(base.rglob("*.txt")):
         text = await asyncio.to_thread(path.read_text, encoding="utf-8")
         docs.append(RawDoc(path=path, text=text))
     return docs
