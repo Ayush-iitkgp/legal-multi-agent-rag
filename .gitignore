@@ -40,3 +40,5 @@ dist/
 # IDEs
 .idea/
 .vscode/
+
+problem_statement/data/

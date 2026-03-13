@@ -1,0 +1,21 @@
+---
+description: Rules for Python 3.10 and FastAPI 0.115 backend development
+globs: src/**
+alwaysApply: false
+---
+
+# Backend Tech Stack
+
+- **Language:** Python 3.10 (Use Type Hints for all function signatures)
+- **Validation:** Pydantic v2
+
+# Coding Standards
+
+- **Async First:** Use `async def` for all I/O bound operations (DB, External APIs).
+- **Concurrency:** Prefer `asyncio`-based concurrency (e.g. `asyncio.gather`) for parallel I/O inside `async def` endpoints. Avoid CPU‑bound work in request handlers; offload heavy CPU tasks to background workers (e.g. Celery, RQ) or `concurrent.futures.ThreadPoolExecutor`.
+- **Blocking Calls:** Never call blocking I/O (e.g. `requests`, raw file I/O) directly inside `async def` routes; instead use async libraries (e.g. `httpx.AsyncClient`).
+
+# Directory Structure
+
+- Follow `PEP 8` (snake_case for files and folders).
+- Structure: `routers/`, `schemas/`, `models/`, `services/`.
