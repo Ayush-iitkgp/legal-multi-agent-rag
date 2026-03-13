@@ -151,8 +151,8 @@ Instead, this project uses **section‑based chunking** implemented in `simple_c
 - **Default (Ollama) backend**
   - **Embedding model**: `nomic-embed-text`
     - Open‑source, high‑quality embeddings suitable for dense legal text.
-  - **LLM model**: `qwen2.5:7b`
-    - Open‑source 7B‑parameter chat model with good instruction‑following for legal Q&A.
+  - **LLM model**: `llama3.2:1b`
+    - Meta's lightweight 1.24B‑parameter model; fits in low‑memory environments (~1.3 GB).
   - Both models are served locally via the Ollama container defined in `docker-compose.yml`.
 
 - **Optional OpenAI backend**
@@ -223,7 +223,7 @@ docker compose up ollama -d
 
 ```bash
 docker exec ollama ollama pull nomic-embed-text
-docker exec ollama ollama pull qwen2.5:7b
+docker exec ollama ollama pull llama3.2:1b
 ```
 
 Wait for both pulls to complete. You can verify they're available with:
@@ -232,7 +232,7 @@ Wait for both pulls to complete. You can verify they're available with:
 docker exec ollama ollama list
 ```
 
-Models used: `qwen2.5:7b` (chat) and `nomic-embed-text` (embeddings).
+Models used: `llama3.2:1b` (chat) and `nomic-embed-text` (embeddings).
 
 #### Option B: Gemini
 
@@ -361,7 +361,7 @@ Due to the small corpus size, a lightweight manual checklist is sufficient and e
   Retrieval is dense + heuristic filtering; a cross‑encoder or reranker could improve robustness on edge cases.
 
 - **Local LLM limitations**
-  The default Ollama model (`qwen2.5:7b`) handles most single‑clause questions well but may struggle with complex multi‑hop reasoning. Switching to Gemini or OpenAI is a one‑line config change.
+  The default Ollama model (`llama3.2:1b`) is lightweight and fast but may struggle with complex multi‑hop reasoning or strict format adherence. Switching to Gemini or OpenAI is a one‑line config change.
 
 - **Evaluation depth**
   Evaluation is qualitative and based on a handful of stress‑test queries; a production‑ready system would need a richer labeled set and automated checks.
