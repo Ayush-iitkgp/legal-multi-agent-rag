@@ -30,8 +30,10 @@ async def main() -> None:
 
         state.question = text
         state.messages.append(HumanMessage(content=text))
-        result: GraphState = await graph.ainvoke(state)
-        console.print(f"[bold magenta]Assistant[/bold magenta]: {result.final_answer}")
+        # LangGraph returns the state as a plain dict; rehydrate into GraphState
+        result_dict = await graph.ainvoke(state.__dict__)
+        state = GraphState(**result_dict)
+        console.print(f"[bold magenta]Assistant[/bold magenta]: {state.final_answer}")
 
 
 if __name__ == "__main__":

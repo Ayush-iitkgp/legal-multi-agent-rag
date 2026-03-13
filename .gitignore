@@ -42,3 +42,6 @@ dist/
 .vscode/
 
 problem-statement/data/
+
+ollama-data/
+storage/

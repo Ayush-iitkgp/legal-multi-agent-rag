@@ -30,11 +30,46 @@ async def analyze_query(
     model = make_chat_model()
     history_summary = "\n".join(m.content for m in history[-4:]) if history else "None"
     prompt = (
-        "You are a legal query classifier for contract Q&A.\n"
-        "Classify the user's question into one of: fact_lookup, cross_agreement_compare, "
-        "risk_summary, other. Also list 1-3 focus areas from:\n"
-        "termination, confidentiality, liability, indemnification, governing_law, "
-        "data_breach, uptime_sla, remedies, other.\n\n"
+        "You are a legal query classifier for contract Q&A over the following corpus:\n"
+        "- NDA between Acme and Vendor\n"
+        "- Vendor Services Agreement\n"
+        "- Service Level Agreement (SLA)\n"
+        "- Data Processing Agreement (DPA)\n\n"
+        "Your job is to (1) classify the user's question into a coarse query_type and "
+        "(2) identify 1–3 focus_areas that will be used to steer retrieval.\n\n"
+        "Set query_type as exactly one of:\n"
+        "- fact_lookup: direct questions answerable from a single clause in one agreement.\n"
+        '  Examples: "What is the notice period for terminating the NDA?", '
+        '"What is the uptime commitment in the SLA?", '
+        '"Which law governs the Vendor Services Agreement?".\n'
+        "- cross_agreement_compare: questions that require comparing or reconciling terms "
+        "across multiple agreements.\n"
+        '  Examples: "Which agreement governs data breach notification timelines?", '
+        '"Are there conflicting governing laws across agreements?".\n'
+        "- risk_summary: questions that primarily ask about risk, exposure, or legal strategy.\n"
+        '  Examples: "Are there any legal risks related to liability exposure?", '
+        '"Identify any clauses that could pose financial risk to Acme Corp.", '
+        '"Is there any unlimited liability in these agreements?", '
+        '"What happens if Vendor delays breach notification beyond 72 hours?".\n'
+        "- other: anything else (chitchat, drafting entire new contracts, etc.).\n\n"
+        "For focus_areas, choose 1–3 of the following that best match the question:\n"
+        "- termination\n"
+        "- confidentiality\n"
+        "- liability\n"
+        "- indemnification\n"
+        "- governing_law\n"
+        "- data_breach\n"
+        "- uptime_sla\n"
+        "- remedies\n"
+        "- subprocessors\n"
+        "- other\n\n"
+        "Examples of focus_areas mapping:\n"
+        "- Questions about notice periods or contract end → termination\n"
+        "- Questions about secrecy, sharing data, or subcontractors → confidentiality, subprocessors\n"
+        "- Questions about caps, unlimited liability, or financial risk → liability\n"
+        "- Questions about which law applies → governing_law\n"
+        "- Questions about breach notification or 72 hours → data_breach\n"
+        "- Questions about uptime or credits if SLA is not met → uptime_sla, remedies\n\n"
         f"Recent history:\n{history_summary}\n\n"
         f"Question: {question}\n\n"
         "Respond as JSON with keys query_type and focus_areas."
@@ -109,8 +144,16 @@ async def compose_final_answer(
     answer_body: str,
     risk_summary: str,
 ) -> str:
-    return (
-        f"Question: {question}\n\n"
-        f"Answer:\n{answer_body}\n\n"
-        f"Risk flags:\n{risk_summary}"
-    )
+    parts: List[str] = [
+        f"Question: {question}",
+        "",
+        f"Answer:\n{answer_body}",
+    ]
+    if risk_summary.strip():
+        parts.extend(
+            [
+                "",
+                f"Risk flags:\n{risk_summary}",
+            ]
+        )
+    return "\n".join(parts)

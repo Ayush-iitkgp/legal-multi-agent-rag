@@ -23,6 +23,7 @@ class GraphState:
     messages: List[BaseMessage] = field(default_factory=list)
     question: str | None = None
     query_analysis: QueryAnalysis | None = None
+    is_risk_query: bool = False
     routed_doc_types: List[str] = field(default_factory=list)
     retrieved: List[Document] = field(default_factory=list)
     clauses: List[Document] = field(default_factory=list)
@@ -41,6 +42,7 @@ async def node_router(state: GraphState) -> GraphState:
         history=[m for m in state.messages],
     )
     state.query_analysis = qa
+    state.is_risk_query = qa.query_type == "risk_summary"
 
     q = state.question.lower()
     targets: set[str] = set()
@@ -76,7 +78,10 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
         chunks = chunk_corpus(raw)
         vs = build_vectorstore(chunks, embeddings)
 
-    retriever = vs.as_retriever(search_kwargs={"k": RETRIEVAL_TOP_K})
+    # Use a wider retrieval fan-out for risk queries to allow cross-agreement analysis.
+    is_risk = state.is_risk_query
+    top_k = RETRIEVAL_TOP_K * 2 if is_risk else RETRIEVAL_TOP_K
+    retriever = vs.as_retriever(search_kwargs={"k": top_k})
 
     base_query = state.question or ""
     queries: List[str] = [base_query]
@@ -93,7 +98,8 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
     # Reduce phase: de-duplicate and filter to routed document types, if provided.
     seen_keys: set[tuple[str, str]] = set()
     reduced: List[Document] = []
-    allowed_types = set(state.routed_doc_types)
+    # For risk queries, allow clauses from all agreements; otherwise, respect routing.
+    allowed_types = set() if is_risk else set(state.routed_doc_types)
 
     def _key(d: Document) -> tuple[str, str]:
         source = str(d.metadata.get("source", "unknown"))
@@ -139,9 +145,22 @@ async def node_answer_composer(state: GraphState) -> GraphState:
     state.final_answer = await compose_final_answer(
         question=state.question,
         answer_body=state.answer_body or "",
-        risk_summary=state.risk_summary or "None identified.",
+        risk_summary=state.risk_summary or "",
     )
     return state
+
+
+def _route_after_legal_analyst(state: GraphState) -> str:
+    """
+    Decide whether to run the risk auditor.
+
+    Risk analysis is optional and only executed when the query is primarily
+    about risk/coverage. For other query types, we skip the risk node and go
+    directly to answer composition.
+    """
+    if state.is_risk_query:
+        return "do_risk"
+    return "skip_risk"
 
 
 def build_graph() -> StateGraph:
@@ -154,7 +173,15 @@ def build_graph() -> StateGraph:
     builder.set_entry_point("router")
     builder.add_edge("router", "clause_extractor")
     builder.add_edge("clause_extractor", "legal_analyst")
-    builder.add_edge("legal_analyst", "legal_auditor")
+    # Conditionally run the risk auditor: only for explicit risk_summary queries.
+    builder.add_conditional_edges(
+        "legal_analyst",
+        _route_after_legal_analyst,
+        {
+            "do_risk": "legal_auditor",
+            "skip_risk": "answer_composer",
+        },
+    )
     builder.add_edge("legal_auditor", "answer_composer")
     builder.add_edge("answer_composer", END)
     return builder
