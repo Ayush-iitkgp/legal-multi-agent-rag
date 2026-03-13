@@ -75,9 +75,14 @@ async def assess_risks(question: str, docs: Sequence[Document]) -> str:
         for i, d in enumerate(docs)
     )
     prompt = (
-        "You are a legal risk reviewer.\n"
+        "You are a senior legal auditor reviewing a portfolio of related agreements "
+        "(e.g., NDA, DPA, Services Agreement).\n"
         "Given the context clauses and the user's question, identify any material legal or "
         "financial risks to Acme Corp.\n"
+        "Pay special attention to inconsistencies across documents, such as differing governing "
+        "laws, conflicting effective dates, incompatible termination or data breach timelines, "
+        "or obligations that cannot all be satisfied at once.\n"
+        "Use the metadata (document_type, effective_date) and refer to clauses as [1], [2], etc.\n"
         "Return a short bullet list, each item mentioning severity (LOW/MEDIUM/HIGH), "
         "risk type (liability, confidentiality, data_breach, governing_law, uptime_sla, other), "
         "and reference clause numbers [1], [2], etc.\n\n"

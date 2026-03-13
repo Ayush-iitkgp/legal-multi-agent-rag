@@ -14,6 +14,18 @@ from src.config import DATA_DIR
 class RawDoc:
     path: Path
     text: str
+    document_type: str | None = None
+
+
+def _infer_document_type(path: Path, text: str) -> str:
+    """
+    Use the filename (without extension) as the document_type.
+
+    This makes it easy to reason about specific agreements like
+    'vendor_services_agreement' or 'data_processing_agreement' directly
+    in routing and analysis.
+    """
+    return path.stem
 
 
 async def load_raw_docs(data_dir: Path | None = None) -> List[RawDoc]:
@@ -29,11 +41,16 @@ async def load_raw_docs(data_dir: Path | None = None) -> List[RawDoc]:
     docs: List[RawDoc] = []
     for path in sorted(base.rglob("*.txt")):
         text = await asyncio.to_thread(path.read_text, encoding="utf-8")
-        docs.append(RawDoc(path=path, text=text))
+        document_type = _infer_document_type(path, text)
+        docs.append(RawDoc(path=path, text=text, document_type=document_type))
     return docs
 
 
-def simple_clause_chunk(text: str, source_name: str) -> List[Document]:
+def simple_clause_chunk(
+    text: str,
+    source_name: str,
+    document_type: str | None = None,
+) -> List[Document]:
     lines = text.splitlines()
     chunks: List[Document] = []
     current_lines: List[str] = []
@@ -46,12 +63,31 @@ def simple_clause_chunk(text: str, source_name: str) -> List[Document]:
             chunks.append(
                 Document(
                     page_content=content,
-                    metadata={"source": source_name},
+                    metadata={
+                        "source": source_name,
+                        "document_type": document_type,
+                        "section_index": len(chunks) + 1,
+                    },
                 )
             )
 
+    def is_section_header(line: str) -> bool:
+        stripped = line.strip()
+        if not stripped:
+            return False
+        # Numbered headings: "1.", "2.1", etc.
+        if stripped[0].isdigit() and "." in stripped[:4]:
+            return True
+        # Markdown-style headings: "#", "##", etc.
+        if stripped.startswith(("#", "##", "###")):
+            return True
+        # Short all-caps headings: "TERMINATION", "GOVERNING LAW"
+        if stripped.isupper() and 3 <= len(stripped) <= 80:
+            return True
+        return False
+
     for line in lines:
-        if line.strip().startswith(tuple(str(i) + "." for i in range(1, 10))):
+        if is_section_header(line):
             flush()
             current_lines = [line]
         else:
@@ -63,5 +99,11 @@ def simple_clause_chunk(text: str, source_name: str) -> List[Document]:
 def chunk_corpus(raw_docs: Iterable[RawDoc]) -> List[Document]:
     all_chunks: List[Document] = []
     for doc in raw_docs:
-        all_chunks.extend(simple_clause_chunk(doc.text, source_name=doc.path.name))
+        all_chunks.extend(
+            simple_clause_chunk(
+                doc.text,
+                source_name=doc.path.name,
+                document_type=doc.document_type,
+            )
+        )
     return all_chunks
