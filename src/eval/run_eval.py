@@ -10,7 +10,9 @@ console = Console()
 
 
 def main() -> None:
-    path = run_eval(Path("eval_outputs.json"))
+    import asyncio
+
+    path = asyncio.run(run_eval(Path("eval_outputs.json")))
     console.print(f"[bold green]Wrote evaluation results to {path}[/bold green]")
 
 

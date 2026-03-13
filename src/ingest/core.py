@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List
 
+import asyncio
 from langchain_core.documents import Document
 
 from src.config import DATA_DIR
@@ -15,11 +16,11 @@ class RawDoc:
     text: str
 
 
-def load_raw_docs(data_dir: Path | None = None) -> List[RawDoc]:
+async def load_raw_docs(data_dir: Path | None = None) -> List[RawDoc]:
     base = data_dir or DATA_DIR
     docs: List[RawDoc] = []
     for path in sorted(base.glob("*.txt")):
-        text = path.read_text(encoding="utf-8")
+        text = await asyncio.to_thread(path.read_text, encoding="utf-8")
         docs.append(RawDoc(path=path, text=text))
     return docs
 

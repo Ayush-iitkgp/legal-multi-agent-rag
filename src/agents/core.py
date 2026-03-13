@@ -23,7 +23,10 @@ class QueryAnalysis:
     focus_areas: List[str]
 
 
-def analyze_query(question: str, history: Sequence[HumanMessage | AIMessage]) -> QueryAnalysis:
+async def analyze_query(
+    question: str,
+    history: Sequence[HumanMessage | AIMessage],
+) -> QueryAnalysis:
     model = make_chat_model()
     history_summary = "\n".join(m.content for m in history[-4:]) if history else "None"
     prompt = (
@@ -36,7 +39,7 @@ def analyze_query(question: str, history: Sequence[HumanMessage | AIMessage]) ->
         f"Question: {question}\n\n"
         "Respond as JSON with keys query_type and focus_areas."
     )
-    msg = model.invoke(prompt)
+    msg = await model.ainvoke(prompt)
     import json
 
     try:
@@ -49,7 +52,7 @@ def analyze_query(question: str, history: Sequence[HumanMessage | AIMessage]) ->
     return QueryAnalysis(query_type=qtype, focus_areas=list(focus))
 
 
-def draft_answer(question: str, docs: Sequence[Document]) -> str:
+async def draft_answer(question: str, docs: Sequence[Document]) -> str:
     model = make_chat_model()
     context = "\n\n".join(
         f"[{i+1}] {d.metadata.get('source')}\n{d.page_content}"
@@ -61,11 +64,11 @@ def draft_answer(question: str, docs: Sequence[Document]) -> str:
         "Quote key clauses briefly and refer to them as [1], [2], etc. where relevant.\n\n"
         f"Context:\n{context}\n\nQuestion: {question}"
     )
-    msg = model.invoke(prompt)
+    msg = await model.ainvoke(prompt)
     return msg.content  # type: ignore[return-value]
 
 
-def assess_risks(question: str, docs: Sequence[Document]) -> str:
+async def assess_risks(question: str, docs: Sequence[Document]) -> str:
     model = make_chat_model()
     context = "\n\n".join(
         f"[{i+1}] {d.metadata.get('source')}\n{d.page_content}"
@@ -80,11 +83,11 @@ def assess_risks(question: str, docs: Sequence[Document]) -> str:
         "and reference clause numbers [1], [2], etc.\n\n"
         f"Context:\n{context}\n\nQuestion: {question}"
     )
-    msg = model.invoke(prompt)
+    msg = await model.ainvoke(prompt)
     return msg.content  # type: ignore[return-value]
 
 
-def compose_final_answer(
+async def compose_final_answer(
     question: str,
     answer_body: str,
     risk_summary: str,

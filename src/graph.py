@@ -31,10 +31,10 @@ class GraphState:
     final_answer: str | None = None
 
 
-def node_query_analyzer(state: GraphState) -> GraphState:
+async def node_query_analyzer(state: GraphState) -> GraphState:
     if not state.question:
         return state
-    qa = analyze_query(
+    qa = await analyze_query(
         question=state.question,
         history=[m for m in state.messages],
     )
@@ -42,12 +42,12 @@ def node_query_analyzer(state: GraphState) -> GraphState:
     return state
 
 
-def node_retrieve(state: GraphState) -> GraphState:
+async def node_retrieve(state: GraphState) -> GraphState:
     embeddings = make_embeddings()
     try:
         vs = load_vectorstore(embeddings)
     except Exception:
-        raw = load_raw_docs()
+        raw = await load_raw_docs()
         chunks = chunk_corpus(raw)
         vs = build_vectorstore(chunks, embeddings)
     retriever = vs.as_retriever(search_kwargs={"k": RETRIEVAL_TOP_K})
@@ -56,25 +56,25 @@ def node_retrieve(state: GraphState) -> GraphState:
     return state
 
 
-def node_legal_analyst(state: GraphState) -> GraphState:
+async def node_legal_analyst(state: GraphState) -> GraphState:
     if not state.question:
         return state
-    state.answer_body = draft_answer(state.question, state.retrieved)
+    state.answer_body = await draft_answer(state.question, state.retrieved)
     state.messages.append(AIMessage(content=state.answer_body or ""))
     return state
 
 
-def node_risk_assessor(state: GraphState) -> GraphState:
+async def node_risk_assessor(state: GraphState) -> GraphState:
     if not state.question:
         return state
-    state.risk_summary = assess_risks(state.question, state.retrieved)
+    state.risk_summary = await assess_risks(state.question, state.retrieved)
     return state
 
 
-def node_answer_composer(state: GraphState) -> GraphState:
+async def node_answer_composer(state: GraphState) -> GraphState:
     if not state.question:
         return state
-    state.final_answer = compose_final_answer(
+    state.final_answer = await compose_final_answer(
         question=state.question,
         answer_body=state.answer_body or "",
         risk_summary=state.risk_summary or "None identified.",

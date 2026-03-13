@@ -16,12 +16,12 @@ SAMPLE_QUERIES: List[str] = [
 ]
 
 
-def run_eval(output_path: Path | None = None) -> Path:
+async def run_eval(output_path: Path | None = None) -> Path:
     graph = build_graph().compile()
     results = []
     for q in SAMPLE_QUERIES:
         state = GraphState(question=q)
-        out: GraphState = graph.invoke(state)
+        out: GraphState = await graph.ainvoke(state)
         results.append(
             {
                 "question": q,

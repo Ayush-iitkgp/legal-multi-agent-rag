@@ -9,7 +9,7 @@ from langchain_core.messages import HumanMessage
 console = Console()
 
 
-def main() -> None:
+async def main() -> None:
     graph = build_graph().compile()
     state = GraphState()
 
@@ -31,9 +31,11 @@ def main() -> None:
 
         state.question = text
         state.messages.append(HumanMessage(content=text))
-        result: GraphState = graph.invoke(state)
+        result: GraphState = await graph.ainvoke(state)
         console.print(f"[bold magenta]Assistant[/bold magenta]: {result.final_answer}")
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+
+    asyncio.run(main())
