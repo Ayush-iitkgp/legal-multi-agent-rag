@@ -44,25 +44,38 @@ async def node_router(state: GraphState) -> GraphState:
     state.query_analysis = qa
     state.is_risk_query = qa.query_type == "risk_summary"
 
-    q = state.question.lower()
+    # Map high-level doc_targets from the classifier onto concrete document_type values.
     targets: set[str] = set()
-
-    if any(
-        k in q
-        for k in ("dpa", "data processing", "sub-processor", "72 hours", "breach")
-    ):
-        targets.add("dpa")
-    if any(k in q for k in ("nda", "non-disclosure", "confidential information")):
-        targets.add("nda")
-    if any(
-        k in q
-        for k in ("service", "sla", "uptime", "availability", "termination", "fees")
-    ):
-        targets.add("services_agreement")
+    for label in qa.doc_targets:
+        label_norm = label.strip().lower()
+        if label_norm == "nda":
+            targets.add("nda_acme_vendor")
+        elif label_norm == "vendor_services":
+            targets.add("vendor_services_agreement")
+        elif label_norm == "service_level":
+            targets.add("service_level_agreement")
+        elif label_norm == "dpa":
+            targets.add("data_processing_agreement")
+        elif label_norm == "all":
+            targets.update(
+                {
+                    "nda_acme_vendor",
+                    "vendor_services_agreement",
+                    "service_level_agreement",
+                    "data_processing_agreement",
+                }
+            )
 
     if not targets:
         # Fallback: consider all agreement types when routing is ambiguous.
-        targets.update(("nda", "dpa", "services_agreement"))
+        targets.update(
+            {
+                "nda_acme_vendor",
+                "vendor_services_agreement",
+                "service_level_agreement",
+                "data_processing_agreement",
+            }
+        )
 
     state.routed_doc_types = sorted(targets)
     return state
@@ -116,6 +129,17 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
             continue
         seen_keys.add(k)
         reduced.append(d)
+
+    # Safety net: if routing filters everything out, fall back to all_docs (deduped)
+    # instead of leaving retrieval empty, which would force the LLM to hallucinate.
+    if not reduced and all_docs:
+        seen_keys.clear()
+        for d in all_docs:
+            k = _key(d)
+            if k in seen_keys:
+                continue
+            seen_keys.add(k)
+            reduced.append(d)
 
     state.retrieved = reduced
     state.clauses = reduced

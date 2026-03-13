@@ -21,6 +21,7 @@ QueryType = Literal[
 class QueryAnalysis:
     query_type: QueryType
     focus_areas: List[str]
+    doc_targets: List[str]
 
 
 async def analyze_query(
@@ -35,8 +36,10 @@ async def analyze_query(
         "- Vendor Services Agreement\n"
         "- Service Level Agreement (SLA)\n"
         "- Data Processing Agreement (DPA)\n\n"
-        "Your job is to (1) classify the user's question into a coarse query_type and "
-        "(2) identify 1–3 focus_areas that will be used to steer retrieval.\n\n"
+        "Your job is to:\n"
+        "1) classify the user's question into a coarse query_type, and\n"
+        "2) identify 1–3 focus_areas that will be used to steer retrieval, and\n"
+        "3) choose which agreement(s) are most relevant via doc_targets.\n\n"
         "Set query_type as exactly one of:\n"
         "- fact_lookup: direct questions answerable from a single clause in one agreement.\n"
         '  Examples: "What is the notice period for terminating the NDA?", '
@@ -52,6 +55,23 @@ async def analyze_query(
         '"Is there any unlimited liability in these agreements?", '
         '"What happens if Vendor delays breach notification beyond 72 hours?".\n'
         "- other: anything else (chitchat, drafting entire new contracts, etc.).\n\n"
+        "Set doc_targets to a list containing one or more of:\n"
+        "- nda            (for NDA between Acme and Vendor)\n"
+        "- vendor_services (for the main Vendor Services Agreement)\n"
+        "- service_level   (for the SLA)\n"
+        "- dpa            (for the Data Processing Agreement)\n"
+        "- all            (for questions that clearly span all agreements, especially risk_summary)\n\n"
+        "Examples:\n"
+        '- "What is the notice period for terminating the NDA?" → query_type: fact_lookup, '
+        'focus_areas: ["termination"], doc_targets: ["nda"]\n'
+        '- "What is the uptime commitment in the SLA?" → query_type: fact_lookup, '
+        'focus_areas: ["uptime_sla"], doc_targets: ["service_level"]\n'
+        '- "Which law governs the Vendor Services Agreement?" → query_type: fact_lookup, '
+        'focus_areas: ["governing_law"], doc_targets: ["vendor_services"]\n'
+        '- "Which agreement governs data breach notification timelines?" → query_type: cross_agreement_compare, '
+        'focus_areas: ["data_breach"], doc_targets: ["dpa", "vendor_services", "service_level"]\n'
+        '- "Are there any legal risks related to liability exposure?" → query_type: risk_summary, '
+        'focus_areas: ["liability"], doc_targets: ["all"]\n\n'
         "For focus_areas, choose 1–3 of the following that best match the question:\n"
         "- termination\n"
         "- confidentiality\n"
@@ -72,7 +92,7 @@ async def analyze_query(
         "- Questions about uptime or credits if SLA is not met → uptime_sla, remedies\n\n"
         f"Recent history:\n{history_summary}\n\n"
         f"Question: {question}\n\n"
-        "Respond as JSON with keys query_type and focus_areas."
+        "Respond as JSON with keys query_type, focus_areas, and doc_targets."
     )
     msg = await model.ainvoke(prompt)
     import json
@@ -81,10 +101,24 @@ async def analyze_query(
         data = json.loads(msg.content)  # type: ignore[arg-type]
         qtype: QueryType = data.get("query_type", "fact_lookup")
         focus = data.get("focus_areas") or []
+        doc_targets = data.get("doc_targets") or []
     except Exception:
         qtype = "fact_lookup"
         focus = []
-    return QueryAnalysis(query_type=qtype, focus_areas=list(focus))
+        doc_targets = ["all"]
+    # Normalize doc_targets to a list of strings.
+    if isinstance(doc_targets, str):
+        doc_targets_list: List[str] = [doc_targets]
+    else:
+        doc_targets_list = [str(t) for t in doc_targets]
+    if not doc_targets_list:
+        # Sensible default: for risk_summary use all, otherwise fall back to all.
+        doc_targets_list = ["all"]
+    return QueryAnalysis(
+        query_type=qtype,
+        focus_areas=list(focus),
+        doc_targets=doc_targets_list,
+    )
 
 
 async def draft_answer(question: str, docs: Sequence[Document]) -> str:
