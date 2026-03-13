@@ -28,4 +28,3 @@ def make_embeddings() -> Embeddings:
     if backend == "openai":
         return openai_api.make_embeddings()
     return ollama_api.make_embeddings()
-

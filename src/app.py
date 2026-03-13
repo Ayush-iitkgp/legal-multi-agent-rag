@@ -1,10 +1,9 @@
-from __future__ import annotations
-
 from rich.console import Console
 from rich.prompt import Prompt
 
 from src.graph import GraphState, build_graph
 from langchain_core.messages import HumanMessage
+import asyncio
 
 console = Console()
 
@@ -36,6 +35,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(main())

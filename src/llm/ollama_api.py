@@ -17,4 +17,3 @@ def make_chat_model() -> BaseChatModel:
 
 def make_embeddings() -> Embeddings:
     return OllamaEmbeddings(model=config.EMBED_MODEL_NAME)
-

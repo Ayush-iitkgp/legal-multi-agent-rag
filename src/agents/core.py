@@ -97,4 +97,3 @@ async def compose_final_answer(
         f"Answer:\n{answer_body}\n\n"
         f"Risk flags:\n{risk_summary}"
     )
-

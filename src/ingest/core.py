@@ -57,4 +57,3 @@ def chunk_corpus(raw_docs: Iterable[RawDoc]) -> List[Document]:
     for doc in raw_docs:
         all_chunks.extend(simple_clause_chunk(doc.text, source_name=doc.path.name))
     return all_chunks
-

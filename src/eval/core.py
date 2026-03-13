@@ -37,4 +37,3 @@ async def run_eval(output_path: Path | None = None) -> Path:
         path = out_dir
     path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     return path
-

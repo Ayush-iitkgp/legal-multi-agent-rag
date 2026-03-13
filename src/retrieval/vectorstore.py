@@ -30,4 +30,3 @@ def load_vectorstore(embeddings: Embeddings, persist_dir: Path | None = None) ->
         embedding_function=embeddings,
         persist_directory=str(path),
     )
-
