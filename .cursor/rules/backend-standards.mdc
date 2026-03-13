@@ -18,4 +18,4 @@ alwaysApply: false
 # Directory Structure
 
 - Follow `PEP 8` (snake_case for files and folders).
-- Structure: `src/`, `schemas/`, `models/`, `services/`.
+- Structure: `src/llm`, `src/retrieval`, `src/`, `services/`.
