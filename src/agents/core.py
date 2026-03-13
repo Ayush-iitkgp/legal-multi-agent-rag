@@ -28,6 +28,7 @@ async def analyze_query(
     history: Sequence[HumanMessage | AIMessage],
 ) -> QueryAnalysis:
     model = make_chat_model()
+    # Only use the last 4 messages in the history
     history_summary = "\n".join(m.content for m in history[-4:]) if history else "None"
     prompt = (
         "You are a legal query classifier for contract Q&A.\n"
