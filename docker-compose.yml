@@ -3,6 +3,7 @@ version: "3.9"
 services:
   ollama:
     image: ollama/ollama:latest
+    container_name: ollama
     restart: unless-stopped
     ports:
       - "11434:11434"
@@ -15,7 +16,7 @@ services:
     #     ollama serve &
     #     sleep 5 &&
     #     ollama pull nomic-embed-text &&
-    #     ollama pull qwen2.5:0.5b &&
+    #     ollama pull qwen2.5:7b &&
     #     wait
     #   "
 

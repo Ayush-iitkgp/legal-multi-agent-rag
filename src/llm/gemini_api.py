@@ -8,7 +8,7 @@ from src import config
 def make_chat_model() -> BaseChatModel:
     return ChatGoogleGenerativeAI(
         model=config.LLM_MODEL_NAME,
-        temperature=0.1,
+        temperature=0,
     )
 
 

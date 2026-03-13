@@ -14,7 +14,7 @@ MODEL_BACKEND: ModelBackend = "ollama"
 OPENAI_CHAT_MODEL: str = "gpt-4.1-mini"
 OPENAI_EMBED_MODEL: str = "text-embedding-3-small"
 
-OLLAMA_CHAT_MODEL: str = "qwen2.5:0.5b"
+OLLAMA_CHAT_MODEL: str = "qwen2.5:7b"
 OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
 
 GEMINI_CHAT_MODEL: str = "gemini-2.0-flash"
