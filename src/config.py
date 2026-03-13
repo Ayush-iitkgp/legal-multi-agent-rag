@@ -8,7 +8,7 @@ INDEX_DIR: Path = BASE_DIR / "storage" / "chroma"
 
 ModelBackend = Literal["openai", "ollama", "gemini"]
 
-MODEL_BACKEND: ModelBackend = "gemini"
+MODEL_BACKEND: ModelBackend = "ollama"
 
 # Default model names per backend.
 OPENAI_CHAT_MODEL: str = "gpt-4.1-mini"

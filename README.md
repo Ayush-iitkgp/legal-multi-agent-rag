@@ -176,31 +176,87 @@ Instead, this project uses **section‑based chunking** implemented in `simple_c
 
 ### 4.1 Prerequisites
 
-- Python **3.10**
-- Docker (for the Ollama container)
+- Python **3.10+**
+- [Poetry](https://python-poetry.org/docs/#installation) (Python dependency manager)
+- Docker & Docker Compose (for the Ollama container, if using the Ollama backend)
 
-### 4.2 Environment and dependencies (Poetry + Ollama)
+### 4.2 Install Poetry (version 2.0.1)
 
-From the project root, create and install the environment using **Poetry**:
+If you don't have Poetry installed yet:
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 - --version 2.0.1
+```
+
+Verify it's available:
+
+```bash
+poetry --version
+# Expected: Poetry (version 2.0.1)
+```
+
+### 4.3 Install project dependencies
+
+From the project root:
 
 ```bash
 poetry install
 ```
 
-This will create an isolated virtual environment and install all dependencies from `pyproject.toml`.
+This creates an isolated virtual environment and installs all dependencies from `pyproject.toml`.
 
-Then start the **Ollama** service (which will serve `nomic-embed-text` and `qwen2.5:0.5b` locally):
+### 4.4 Backend setup
+
+The project supports three LLM backends. Pick one and follow the steps below.
+
+#### Option A: Ollama (default – local, open source)
+
+Set `MODEL_BACKEND = "ollama"` in `src/config.py` (already the default).
+
+**Step 1** – Start the Ollama Docker container:
 
 ```bash
-docker compose up ollama
+docker compose up ollama -d
 ```
 
-By default the project is configured to use the Ollama backend (open source, free, and low‑latency).
-If you also want to experiment with OpenAI, set your credentials (for example in `.env` or shell env) and switch `MODEL_BACKEND` to `"openai"`:
+**Step 2** – Pull the required models inside the running container:
+
+```bash
+docker exec ollama ollama pull nomic-embed-text
+docker exec ollama ollama pull qwen2.5:0.5b
+```
+
+Wait for both pulls to complete. You can verify they're available with:
+
+```bash
+docker exec ollama ollama list
+```
+
+Models used: `qwen2.5:0.5b` (chat) and `nomic-embed-text` (embeddings).
+
+#### Option B: Gemini
+
+Set `MODEL_BACKEND = "gemini"` in `src/config.py`.
+
+Set your Gemini API key:
+
+```bash
+export GOOGLE_API_KEY="your-gemini-api-key"
+```
+
+No Docker required. Models used: `gemini-2.0-flash` (chat) and `models/text-embedding-004` (embeddings).
+
+#### Option C: OpenAI
+
+Set `MODEL_BACKEND = "openai"` in `src/config.py`.
+
+Set your OpenAI API key:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 ```
+
+Models used: `gpt-4.1-mini` (chat) and `text-embedding-3-small` (embeddings).
 
 ---
 
