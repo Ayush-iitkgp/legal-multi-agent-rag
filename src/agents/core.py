@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import List, Literal, Sequence
 
@@ -7,7 +5,7 @@ from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage
 
 from src.llm.factory import make_chat_model
-
+import json
 
 QueryType = Literal["fact_lookup", "cross_agreement_compare", "risk_summary", "other"]
 
@@ -57,7 +55,6 @@ async def analyze_query(
         "Respond as JSON with keys query_type and doc_targets."
     )
     msg = await model.ainvoke(prompt)
-    import json
 
     try:
         data = json.loads(msg.content)  # type: ignore[arg-type]

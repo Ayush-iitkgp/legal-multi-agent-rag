@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from langchain_community.chat_models import ChatOllama
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_core.embeddings import Embeddings
