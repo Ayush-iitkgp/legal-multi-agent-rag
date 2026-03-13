@@ -3,7 +3,6 @@ version: "3.9"
 services:
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama
     restart: unless-stopped
     ports:
       - "11434:11434"
@@ -11,14 +10,14 @@ services:
       - ollama-data:/root/.ollama
     environment:
       - OLLAMA_KEEP_ALIVE=24h
-    command: >
-      sh -c "
-        ollama serve &
-        sleep 5 &&
-        ollama pull nomic-embed-text &&
-        ollama pull qwen2.5:0.5b &&
-        wait
-      "
+    # command: >
+    #   sh -c "
+    #     ollama serve &
+    #     sleep 5 &&
+    #     ollama pull nomic-embed-text &&
+    #     ollama pull qwen2.5:0.5b &&
+    #     wait
+    #   "
 
 volumes:
   ollama-data:
