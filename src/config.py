@@ -28,4 +28,4 @@ else:
 CHUNK_SIZE: int = 800
 CHUNK_OVERLAP: int = 120
 
-RETRIEVAL_TOP_K: int = 8
+RETRIEVAL_TOP_K: int = 2

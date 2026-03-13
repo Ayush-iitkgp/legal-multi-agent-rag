@@ -90,13 +90,21 @@ async def analyze_query(
 async def draft_answer(question: str, docs: Sequence[Document]) -> str:
     model = make_chat_model()
     context = "\n\n".join(
-        f"[{i+1}] {d.metadata.get('source')}\n{d.page_content}"
+        f"[{i+1}] {d.metadata.get('source')}, section: {d.metadata.get('section_title')}\n{d.page_content}"
         for i, d in enumerate(docs)
     )
     prompt = (
         "You are a legal contracts analyst.\n"
         "Answer the question using ONLY the context clauses below.\n"
-        "Quote key clauses briefly and refer to them as [1], [2], etc. where relevant.\n\n"
+        "Quote key clauses briefly and refer to them as [1], [2], etc. where relevant.\n"
+        "When you rely on a clause, your answer MUST:\n"
+        '- Include the bracket reference next to the relevant sentence, e.g. "... 30 days[1]."\n'
+        "- At the end, add a 'Citations used:' block, one per line, in the exact format:\n"
+        "  [n] filename.txt, section: <section title>\n"
+        "For example:\n"
+        "  The Notice Period for terminating the NDA is 30 days[1].\n"
+        "  Citations used:\n"
+        "  [1] nda_acme_vendor.txt, section: Term and Termination\n\n"
         f"Context:\n{context}\n\nQuestion: {question}"
     )
     msg = await model.ainvoke(prompt)
@@ -106,7 +114,7 @@ async def draft_answer(question: str, docs: Sequence[Document]) -> str:
 async def assess_risks(question: str, docs: Sequence[Document]) -> str:
     model = make_chat_model()
     context = "\n\n".join(
-        f"[{i+1}] {d.metadata.get('source')}\n{d.page_content}"
+        f"[{i+1}] {d.metadata.get('source')}, section: {d.metadata.get('section_title')}\n{d.page_content}"
         for i, d in enumerate(docs)
     )
     prompt = (

@@ -75,6 +75,14 @@ def simple_clause_chunk(
             if current_lines:
                 content = "\n".join(current_lines).strip()
                 if content:
+                    first_line = content.splitlines()[0].strip()
+                    # Derive a human-readable section title from the header line.
+                    import re
+
+                    heading = (
+                        re.sub(r"^\d+(\.\d+)*\s*\.?\s*", "", first_line).strip()
+                        or first_line
+                    )
                     chunks.append(
                         Document(
                             page_content=content,
@@ -82,6 +90,7 @@ def simple_clause_chunk(
                                 "source": source_name,
                                 "document_type": document_type,
                                 "section_index": len(chunks) + 1,
+                                "section_title": heading,
                             },
                         )
                     )
@@ -91,6 +100,12 @@ def simple_clause_chunk(
     if current_lines:
         content = "\n".join(current_lines).strip()
         if content:
+            first_line = content.splitlines()[0].strip()
+            import re
+
+            heading = (
+                re.sub(r"^\d+(\.\d+)*\s*\.?\s*", "", first_line).strip() or first_line
+            )
             chunks.append(
                 Document(
                     page_content=content,
@@ -98,6 +113,7 @@ def simple_clause_chunk(
                         "source": source_name,
                         "document_type": document_type,
                         "section_index": len(chunks) + 1,
+                        "section_title": heading,
                     },
                 )
             )
