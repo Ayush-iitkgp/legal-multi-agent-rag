@@ -55,22 +55,6 @@ def simple_clause_chunk(
     chunks: List[Document] = []
     current_lines: List[str] = []
 
-    def flush() -> None:
-        if not current_lines:
-            return
-        content = "\n".join(current_lines).strip()
-        if content:
-            chunks.append(
-                Document(
-                    page_content=content,
-                    metadata={
-                        "source": source_name,
-                        "document_type": document_type,
-                        "section_index": len(chunks) + 1,
-                    },
-                )
-            )
-
     def is_section_header(line: str) -> bool:
         stripped = line.strip()
         if not stripped:
@@ -88,11 +72,35 @@ def simple_clause_chunk(
 
     for line in lines:
         if is_section_header(line):
-            flush()
+            if current_lines:
+                content = "\n".join(current_lines).strip()
+                if content:
+                    chunks.append(
+                        Document(
+                            page_content=content,
+                            metadata={
+                                "source": source_name,
+                                "document_type": document_type,
+                                "section_index": len(chunks) + 1,
+                            },
+                        )
+                    )
             current_lines = [line]
         else:
             current_lines.append(line)
-    flush()
+    if current_lines:
+        content = "\n".join(current_lines).strip()
+        if content:
+            chunks.append(
+                Document(
+                    page_content=content,
+                    metadata={
+                        "source": source_name,
+                        "document_type": document_type,
+                        "section_index": len(chunks) + 1,
+                    },
+                )
+            )
     return chunks
 
 
