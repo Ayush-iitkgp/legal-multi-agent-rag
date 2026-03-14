@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legal Multi-Agent RAG — Slide Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0c0f14;
+  --surface:#151a23;
+  --card:#1b2130;
+  --accent:#4f8ff7;
+  --accent2:#f7a44f;
+  --accent3:#4ff79e;
+  --accent4:#f74f6d;
+  --text:#e2e8f0;
+  --muted:#8b95a8;
+  --border:#2a3245;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif}
+.deck{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);height:100%;will-change:transform}
+.slide{min-width:100vw;height:100vh;padding:60px 80px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow-y:auto}
+.slide::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3))}
+
+h1{font-family:'DM Serif Display',serif;font-size:2.8rem;line-height:1.15;margin-bottom:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+h2{font-family:'DM Serif Display',serif;font-size:2.2rem;margin-bottom:24px;color:var(--accent)}
+h3{font-size:1.1rem;font-weight:600;color:var(--accent2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1.5px}
+.subtitle{font-size:1.2rem;color:var(--muted);margin-bottom:32px;font-weight:300}
+p,.bullet{font-size:1rem;line-height:1.7;color:var(--text);margin-bottom:8px}
+.bullet{padding-left:20px;position:relative;margin-bottom:6px}
+.bullet::before{content:'';position:absolute;left:0;top:10px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.bullet.orange::before{background:var(--accent2)}
+.bullet.green::before{background:var(--accent3)}
+.bullet.red::before{background:var(--accent4)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:16px}
+.box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.box.accent-border{border-left:4px solid var(--accent)}
+.box.orange-border{border-left:4px solid var(--accent2)}
+.box.green-border{border-left:4px solid var(--accent3)}
+.box.red-border{border-left:4px solid var(--accent4)}
+
+code{font-family:'IBM Plex Mono',monospace;background:var(--surface);padding:2px 7px;border-radius:4px;font-size:.88rem;color:var(--accent3)}
+.code-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 22px;font-family:'IBM Plex Mono',monospace;font-size:.85rem;line-height:1.6;color:var(--text);margin:12px 0;white-space:pre;overflow-x:auto}
+
+.tag{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.78rem;font-weight:600;margin:2px 4px}
+.tag.blue{background:rgba(79,143,247,.15);color:var(--accent)}
+.tag.orange{background:rgba(247,164,79,.15);color:var(--accent2)}
+.tag.green{background:rgba(79,247,158,.15);color:var(--accent3)}
+.tag.red{background:rgba(247,79,109,.15);color:var(--accent4)}
+
+.flow{display:flex;align-items:center;gap:0;margin:20px 0;flex-wrap:wrap}
+.flow-node{background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:14px 22px;text-align:center;font-weight:600;font-size:.95rem}
+.flow-node.orange{border-color:var(--accent2)}
+.flow-node.green{border-color:var(--accent3)}
+.flow-arrow{color:var(--muted);font-size:1.5rem;padding:0 8px}
+
+.slide-num{position:absolute;bottom:24px;right:40px;font-size:.8rem;color:var(--muted);font-weight:500}
+.nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100}
+.nav button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:.9rem;transition:all .2s}
+.nav button:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.progress{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));z-index:200;transition:width .4s}
+
+.arch-diagram{display:flex;flex-direction:column;align-items:center;gap:12px;margin:16px 0}
+.arch-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+.arch-box{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center;min-width:140px;font-size:.88rem;font-weight:500}
+.arch-box.highlight{border-color:var(--accent);box-shadow:0 0 20px rgba(79,143,247,.15)}
+.arch-box.store{border-color:var(--accent3)}
+.arch-box.llm{border-color:var(--accent2)}
+.arch-arrow{font-size:1.4rem;color:var(--muted)}
+.arch-arrow.down{transform:rotate(90deg)}
+
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.9rem}
+th{text-align:left;padding:10px 14px;background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);font-weight:600}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+
+small{font-size:.82rem;color:var(--muted)}
+.mt{margin-top:16px}
+.mb{margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="deck" id="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide" style="justify-content:center;align-items:center;text-align:center">
+  <h1 style="font-size:3.4rem">Legal Multi-Agent RAG</h1>
+  <p class="subtitle" style="font-size:1.35rem;max-width:650px">Multi-Agent Contract Analysis System with LangGraph, ChromaDB &amp; Ollama</p>
+  <div style="margin-top:24px">
+    <span class="tag blue">LangGraph</span>
+    <span class="tag orange">Ollama</span>
+    <span class="tag green">ChromaDB</span>
+    <span class="tag red">RAG</span>
+  </div>
+  <p style="margin-top:40px;color:var(--muted);font-size:.95rem">Ayush Pandey</p>
+  <div class="slide-num">1 / 11</div>
+</div>
+
+<!-- SLIDE 2: Problem Statement -->
+<div class="slide">
+  <h2>Problem Statement &amp; Requirements</h2>
+  <div class="grid2">
+    <div>
+      <h3>Context</h3>
+      <p>Acme Corp needs to review a vendor contract package consisting of <strong>4 legal agreements</strong>. Legal/BD users need fast, grounded answers with clause-level citations.</p>
+      <div class="mt">
+        <h3>Corpus</h3>
+        <div class="bullet">NDA (Acme ↔ Vendor)</div>
+        <div class="bullet orange">Vendor Services Agreement</div>
+        <div class="bullet green">Service Level Agreement (SLA)</div>
+        <div class="bullet red">Data Processing Agreement (DPA)</div>
+      </div>
+    </div>
+    <div>
+      <h3>Requirements</h3>
+      <div class="box accent-border">
+        <div class="bullet">Ingest all contracts from <code>problem-statement/data/</code></div>
+        <div class="bullet">Retrieve relevant clauses across agreements</div>
+        <div class="bullet">Provide grounded answers with citations</div>
+        <div class="bullet">Highlight legal &amp; financial risks when asked</div>
+        <div class="bullet">Multi-turn conversational interface</div>
+        <div class="bullet">Console-based — focus on RAG design, not UI</div>
+      </div>
+      <div class="mt">
+        <h3>Example Queries</h3>
+        <p><em>"What is the notice period for terminating the NDA?"</em></p>
+        <p><em>"Are there conflicting governing laws across agreements?"</em></p>
+        <p><em>"Identify clauses that pose financial risk to Acme."</em></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">2 / 11</div>
+</div>
+
+<!-- SLIDE 3: Architecture -->
+<div class="slide">
+  <h2>System Architecture</h2>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box" style="border-color:var(--text);min-width:200px">User Question<br><small>Console CLI (src/app.py)</small></div>
+    </div>
+    <div class="arch-arrow down">→</div>
+    <div class="arch-row">
+      <div class="arch-box highlight">1. Router Agent<br><small>analyze_query()</small><br><span class="tag blue" style="margin-top:6px">query_type + doc_targets</span></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box highlight">2. Clause Extractor<br><small>node_clause_extractor()</small><br><span class="tag green" style="margin-top:6px">filter + dedup</span></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box highlight">3. Answer + Risk<br><small>answer_with_optional_risks()</small><br><span class="tag orange" style="margin-top:6px">cited answer</span></div>
+    </div>
+    <div class="arch-row" style="margin-top:16px;gap:40px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="arch-arrow down">↕</div>
+        <div class="arch-box store">ChromaDB<br><small>storage/chroma/</small></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="arch-arrow down">↕</div>
+        <div class="arch-box llm">Ollama (local)<br><small>llama3.2:1b + nomic-embed-text</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid3 mt">
+    <div class="box accent-border"><strong>Router</strong><br><small>LLM classifies query → picks doc_targets + query_type. Maps labels to filenames.</small></div>
+    <div class="box green-border"><strong>Clause Extractor</strong><br><small>Vector search → metadata filter by document_type → dedup by (source, section).</small></div>
+    <div class="box orange-border"><strong>Answer + Risk</strong><br><small>Single LLM call. Grounded answer with [n] citations. Risk flags only if is_risk_query.</small></div>
+  </div>
+  <div class="slide-num">3 / 11</div>
+</div>
+
+<!-- SLIDE 4: RAG Ingestion -->
+<div class="slide">
+  <h2>RAG Ingestion Workflow</h2>
+  <div class="flow">
+    <div class="flow-node">.txt files</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node orange">load_raw_docs()<br><small>rglob("*.txt")</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node green">simple_clause_chunk()<br><small>section-based</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">ChromaDB<br><small>from_documents()</small></div>
+  </div>
+  <div class="grid2 mt">
+    <div class="box accent-border">
+      <h3>Section-Based Chunking</h3>
+      <p>Splits on <strong>structural headers</strong>, not fixed token windows:</p>
+      <div class="bullet">Numbered headings: <code>1. Scope</code>, <code>3.2 Liability</code></div>
+      <div class="bullet">Markdown headings: <code>#</code>, <code>##</code></div>
+      <div class="bullet">ALL-CAPS headings: <code>TERMINATION</code></div>
+      <p class="mt">Each chunk = one full clause/section with its text.</p>
+    </div>
+    <div class="box orange-border">
+      <h3>Metadata per Chunk</h3>
+      <table>
+        <tr><th>Field</th><th>Example</th></tr>
+        <tr><td><code>source</code></td><td>nda_acme_vendor.txt</td></tr>
+        <tr><td><code>document_type</code></td><td>nda_acme_vendor</td></tr>
+        <tr><td><code>section_index</code></td><td>4</td></tr>
+        <tr><td><code>section_title</code></td><td>Term and Termination</td></tr>
+      </table>
+      <p class="mt"><small>document_type = filename stem, used for routing filter.</small></p>
+    </div>
+  </div>
+  <div class="slide-num">4 / 11</div>
+</div>
+
+<!-- SLIDE 5: Agent Flow -->
+<div class="slide">
+  <h2>Retrieval + Agent Interaction Flow</h2>
+  <div class="code-block">User: "What is the notice period for terminating the NDA?"
+
+<span style="color:var(--accent)">① Router Agent</span>
+   → LLM returns: { query_type: "fact_lookup", doc_targets: ["nda"] }
+   → Maps "nda" → "nda_acme_vendor"
+   → Sets is_risk_query = false
+
+<span style="color:var(--accent3)">② Clause Extractor</span>
+   → Vector search: top_k = 8 (not risk)
+   → Filter: keep only document_type == "nda_acme_vendor"
+   → Dedup by (source, section_index, section_title)
+   → Result: 3 unique NDA clauses
+
+<span style="color:var(--accent2)">③ Answer + Risk Agent</span>
+   → LLM receives 3 clauses as [1], [2], [3]
+   → is_risk_query = false → NO risk flags section
+   → Output: "The notice period is 30 days[1]."
+   → Citations used: [1] nda_acme_vendor.txt, section: Term and Termination</div>
+  <div class="grid2 mt">
+    <div class="box green-border">
+      <h3>Risk Query Difference</h3>
+      <div class="bullet green"><code>top_k = 16</code> (2× fan-out)</div>
+      <div class="bullet green">No document_type filter — all agreements searched</div>
+      <div class="bullet green">Answer includes "Risk flags:" section</div>
+    </div>
+    <div class="box accent-border">
+      <h3>Safety Fallback</h3>
+      <p>If routing filters remove <em>all</em> results, the system falls back to full unfiltered retrieval (still deduped) to prevent empty-context hallucination.</p>
+    </div>
+  </div>
+  <div class="slide-num">5 / 11</div>
+</div>
+
+<!-- SLIDE 6: Design Decisions - Models -->
+<div class="slide">
+  <h2>Design Decisions — Model Selection</h2>
+  <div class="grid3">
+    <div class="box red-border">
+      <h3>qwen2.5:0.5b</h3>
+      <p style="font-size:2rem;margin:8px 0">✗</p>
+      <div class="bullet red">500M params — too small</div>
+      <div class="bullet red">Failed to follow citation format</div>
+      <div class="bullet red">Hallucinated answers</div>
+      <div class="bullet red">Could not produce valid JSON for routing</div>
+      <p class="mt"><span class="tag red">Rejected</span></p>
+    </div>
+    <div class="box orange-border">
+      <h3>qwen2.5:7b</h3>
+      <p style="font-size:2rem;margin:8px 0">⚠</p>
+      <div class="bullet orange">7B params — good quality</div>
+      <div class="bullet orange">Requires 4.3 GiB system memory</div>
+      <div class="bullet orange">Out of Memory error in Docker</div>
+      <div class="bullet orange">Not viable for constrained envs</div>
+      <p class="mt"><span class="tag orange">OOM</span></p>
+    </div>
+    <div class="box green-border">
+      <h3>llama3.2:1b</h3>
+      <p style="font-size:2rem;margin:8px 0">✓</p>
+      <div class="bullet green">1.24B params — sweet spot</div>
+      <div class="bullet green">~1.3 GB memory footprint</div>
+      <div class="bullet green">Adequate instruction following</div>
+      <div class="bullet green">Fits comfortably in Docker</div>
+      <p class="mt"><span class="tag green">Selected</span></p>
+    </div>
+  </div>
+  <div class="box mt" style="border-left:4px solid var(--accent)">
+    <h3>Why Ollama?</h3>
+    <div style="display:flex;gap:40px;flex-wrap:wrap">
+      <div class="bullet"><strong>Free</strong> — no API costs</div>
+      <div class="bullet"><strong>Local</strong> — data stays on-premise</div>
+      <div class="bullet"><strong>Low latency</strong> — no network round-trips</div>
+      <div class="bullet"><strong>Reproducible</strong> — Docker Compose setup</div>
+    </div>
+  </div>
+  <div class="slide-num">6 / 11</div>
+</div>
+
+<!-- SLIDE 7: Chunking & Embeddings -->
+<div class="slide">
+  <h2>Why Section-Based Chunking &amp; Nomic Embeddings</h2>
+  <div class="grid2">
+    <div>
+      <h3>Section-Based Chunking</h3>
+      <div class="box accent-border">
+        <div class="bullet"><strong>Legal text is structured</strong> — clauses have headers, numbered sections, defined boundaries</div>
+        <div class="bullet"><strong>Fixed-size windows split mid-clause</strong> — "Party A shall... [chunk boundary] ...indemnify Party B" loses meaning</div>
+        <div class="bullet"><strong>1 chunk = 1 complete obligation</strong> — preserves legal semantics intact</div>
+        <div class="bullet"><strong>Clean citations</strong> — each chunk maps to a real section title (e.g. "Term and Termination")</div>
+        <div class="bullet"><strong>Small corpus</strong> — 4 docs, ~20-30 sections total, no risk of oversized chunks</div>
+      </div>
+      <div class="box orange-border mt">
+        <h3>Header Detection</h3>
+        <div class="code-block" style="font-size:.8rem">"1. Scope of Services"  → numbered
+"GOVERNING LAW"         → ALL-CAPS
+"## Definitions"        → Markdown</div>
+      </div>
+    </div>
+    <div>
+      <h3>Why nomic-embed-text?</h3>
+      <div class="box green-border">
+        <div class="bullet green"><strong>Open-source</strong> — no API key needed, runs locally via Ollama</div>
+        <div class="bullet green"><strong>High quality</strong> — 768-dim embeddings, strong on MTEB benchmarks</div>
+        <div class="bullet green"><strong>Long context</strong> — 8192 token window, handles full legal clauses</div>
+        <div class="bullet green"><strong>Small footprint</strong> — ~274 MB, fits alongside the LLM in Docker</div>
+        <div class="bullet green"><strong>Matryoshka support</strong> — can truncate dimensions for speed</div>
+      </div>
+      <div class="box mt" style="border-left:4px solid var(--muted)">
+        <h3>Alternatives Considered</h3>
+        <table>
+          <tr><th>Model</th><th>Why Not</th></tr>
+          <tr><td>OpenAI ada-3</td><td>API cost, data leaves premise</td></tr>
+          <tr><td>all-MiniLM</td><td>Lower quality on legal text</td></tr>
+          <tr><td>BGE-large</td><td>Larger footprint, marginal gain</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">7 / 11</div>
+</div>
+
+<!-- SLIDE 8: Retrieval Strategy -->
+<div class="slide">
+  <h2>Retrieval Strategy</h2>
+  <div class="grid2">
+    <div class="box accent-border">
+      <h3>Normal Queries (fact_lookup, cross_agreement)</h3>
+      <div style="font-size:2.6rem;font-weight:700;color:var(--accent);margin:8px 0">top_k = 8</div>
+      <div class="bullet">Retrieve 8 chunks from ChromaDB</div>
+      <div class="bullet">Filter by <code>document_type</code> ∈ routed targets</div>
+      <div class="bullet">Dedup by <code>(source, section_index, section_title)</code></div>
+      <div class="bullet">Typical result: 2–5 unique relevant clauses</div>
+      <p class="mt"><small>Keeps context focused → better answer quality + lower token cost.</small></p>
+    </div>
+    <div class="box orange-border">
+      <h3>Risk Queries (risk_summary)</h3>
+      <div style="font-size:2.6rem;font-weight:700;color:var(--accent2);margin:8px 0">top_k = 16</div>
+      <div class="bullet orange">2× fan-out for wider cross-agreement recall</div>
+      <div class="bullet orange">No document_type filter — all agreements included</div>
+      <div class="bullet orange">Same dedup logic applies</div>
+      <div class="bullet orange">Ensures conflicting clauses across docs are surfaced</div>
+      <p class="mt"><small>Risk analysis needs holistic view → wider retrieval window.</small></p>
+    </div>
+  </div>
+  <div class="box mt" style="border-left:4px solid var(--accent4)">
+    <h3>Why These Numbers?</h3>
+    <div class="grid2" style="margin-top:8px">
+      <div>
+        <div class="bullet"><strong>8</strong> balances recall vs. prompt length for a small corpus (~25 total chunks across 4 docs)</div>
+        <div class="bullet">After filtering + dedup, typically 2–5 chunks reach the LLM</div>
+      </div>
+      <div>
+        <div class="bullet"><strong>16</strong> for risk ensures liability/indemnity clauses from multiple agreements aren't missed</div>
+        <div class="bullet">Dedup prevents redundant context even with wider retrieval</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">8 / 11</div>
+</div>
+
+<!-- SLIDE 9: Agent Prompts -->
+<div class="slide">
+  <h2>Agent Prompts — Unified Answer + Risk</h2>
+  <div class="grid2">
+    <div>
+      <h3>Why One Agent, Not Two?</h3>
+      <div class="box accent-border">
+        <div class="bullet"><strong>Shared context</strong> — answer and risk analysis use the same retrieved clauses. Two agents would duplicate the context window.</div>
+        <div class="bullet"><strong>Single LLM call</strong> — fewer round-trips, lower latency, lower cost. Critical for a local 1B model.</div>
+        <div class="bullet"><strong>Conditional via flag</strong> — <code>is_risk_query</code> toggles the "Risk flags:" section. Not a separate agent, just a prompt switch.</div>
+        <div class="bullet"><strong>Simpler graph</strong> — 3 nodes total. No conditional edges, no branching, easy to debug.</div>
+      </div>
+      <div class="box orange-border mt">
+        <h3>Prompt Toggle Logic</h3>
+        <div class="code-block" style="font-size:.78rem">if is_risk_query:
+  → "Add a 'Risk flags:' section with
+     severity-tagged bullet points"
+else:
+  → "Do NOT add any Risk flags section.
+     Only answer + citations."</div>
+      </div>
+    </div>
+    <div>
+      <h3>Prompt Structure</h3>
+      <div class="box green-border">
+        <p><strong>System role:</strong> "Legal contracts analyst for Acme Corp"</p>
+        <div class="mt">
+          <p><strong>Instructions:</strong></p>
+          <div class="bullet green">Use ONLY context clauses to answer</div>
+          <div class="bullet green">Inline bracket references: <code>"30 days[1]"</code></div>
+          <div class="bullet green">End with "Citations used:" block</div>
+          <div class="bullet green">Format: <code>[n] file.txt, section: title</code></div>
+        </div>
+        <div class="mt">
+          <p><strong>Context fed to LLM:</strong></p>
+          <div class="code-block" style="font-size:.78rem">[1] nda_acme_vendor.txt, section: Term and Termination
+&lt;full clause text&gt;
+
+[2] nda_acme_vendor.txt, section: Confidentiality
+&lt;full clause text&gt;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">9 / 11</div>
+</div>
+
+<!-- SLIDE 10: Evaluation -->
+<div class="slide">
+  <h2>Evaluation Approach</h2>
+  <div class="grid2">
+    <div class="box accent-border">
+      <h3>LLM-as-a-Judge</h3>
+      <p>Use a strong LLM (e.g. GPT-4) to evaluate answer quality on three axes:</p>
+      <table class="mt">
+        <tr><th>Criterion</th><th>What It Measures</th></tr>
+        <tr><td><strong>Faithfulness</strong></td><td>Is the answer grounded in the cited clauses? No hallucinated facts.</td></tr>
+        <tr><td><strong>Relevance</strong></td><td>Does the answer directly address the question asked?</td></tr>
+        <tr><td><strong>Citation accuracy</strong></td><td>Do the [n] references point to the correct source + section?</td></tr>
+      </table>
+      <p class="mt"><small>Each criterion scored 1–5. Judge prompt includes the question, retrieved context, and generated answer.</small></p>
+    </div>
+    <div class="box green-border">
+      <h3>Recall@K</h3>
+      <p>Measures retrieval quality independent of the LLM:</p>
+      <div class="bullet green"><strong>Recall@8</strong> — for normal queries: what fraction of ground-truth clauses appear in the top-8?</div>
+      <div class="bullet green"><strong>Recall@16</strong> — for risk queries: recall with wider fan-out</div>
+      <div class="mt">
+        <p><strong>How to compute:</strong></p>
+        <div class="code-block" style="font-size:.8rem">Recall@K = |relevant ∩ retrieved_top_k|
+           / |relevant|
+
+Gold labels: manually annotated
+(question → relevant sections)</div>
+      </div>
+      <p class="mt"><small>Evaluates retrieval separately from generation — isolates chunking and embedding quality.</small></p>
+    </div>
+  </div>
+  <div class="slide-num">10 / 11</div>
+</div>
+
+<!-- SLIDE 11: Production Enhancements -->
+<div class="slide">
+  <h2>Production Enhancements</h2>
+  <div class="grid3">
+    <div class="box accent-border">
+      <h3>Observability</h3>
+      <div class="bullet"><strong>LangSmith</strong> — end-to-end tracing: latency, token counts, prompts, retrieved docs per run</div>
+      <div class="bullet">Already wired in codebase via env vars</div>
+    </div>
+    <div class="box orange-border">
+      <h3>DB Interaction</h3>
+      <div class="bullet orange">Move from file-based ingestion to a managed document store</div>
+      <div class="bullet orange">Support uploads, versioning, audit trails</div>
+    </div>
+    <div class="box green-border">
+      <h3>Auth &amp; Rate Limiting</h3>
+      <div class="bullet green">API key / OAuth for multi-user access</div>
+      <div class="bullet green">Per-user rate limits to control LLM costs</div>
+    </div>
+    <div class="box accent-border">
+      <h3>Tiered Models</h3>
+      <div class="bullet"><strong>Small model</strong> for Router (fast, cheap classification)</div>
+      <div class="bullet"><strong>Large model</strong> for Answer (high-quality legal reasoning)</div>
+      <div class="bullet">e.g. llama3.2:1b routes → GPT-4 answers</div>
+    </div>
+    <div class="box red-border">
+      <h3>LLM-as-Judge Gate</h3>
+      <div class="bullet red">Before returning answer, run a judge LLM</div>
+      <div class="bullet red">Check: grounded? relevant? well-cited?</div>
+      <div class="bullet red">Reject &amp; regenerate if score &lt; threshold</div>
+    </div>
+    <div class="box" style="border-left:4px solid var(--muted)">
+      <h3>Semantic Caching</h3>
+      <div class="bullet">Cache (embedding → answer) for repeated / similar queries</div>
+      <div class="bullet">Cosine similarity threshold to match cache hits</div>
+      <div class="bullet">Saves LLM calls, cuts latency to near-zero for repeats</div>
+    </div>
+  </div>
+  <div class="slide-num">11 / 11</div>
+</div>
+
+</div><!-- /deck -->
+
+<div class="nav">
+  <button onclick="go(-1)">← Prev</button>
+  <button onclick="go(1)">Next →</button>
+</div>
+
+<script>
+let cur=0;
+const deck=document.getElementById('deck');
+const prog=document.getElementById('prog');
+const total=document.querySelectorAll('.slide').length;
+function go(d){
+  cur=Math.max(0,Math.min(total-1,cur+d));
+  deck.style.transform=`translateX(-${cur*100}vw)`;
+  prog.style.width=((cur+1)/total*100)+'%';
+}
+prog.style.width=(1/total*100)+'%';
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')go(1);
+  if(e.key==='ArrowLeft')go(-1);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX);
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50)go(dx<0?1:-1);
+});
+</script>
+</body>
+</html>
