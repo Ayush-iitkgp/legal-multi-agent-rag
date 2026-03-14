@@ -80,9 +80,8 @@ async def node_router(state: GraphState) -> GraphState:
 async def node_clause_extractor(state: GraphState) -> GraphState:
     """Clause extractor: map-reduce style retrieval over routed documents."""
     embeddings = make_embeddings()
-    try:
-        vs = load_vectorstore(embeddings)
-    except Exception:
+    vs = load_vectorstore(embeddings)
+    if vs._collection.count() == 0:
         raw = await load_raw_docs()
         chunks = chunk_corpus(raw)
         vs = build_vectorstore(chunks, embeddings)

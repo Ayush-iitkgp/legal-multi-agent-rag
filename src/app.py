@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from src.graph import GraphState, build_graph
 from langchain_core.messages import HumanMessage
 import asyncio
 
+logging.basicConfig(level=logging.INFO, format="%(name)s | %(message)s")
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
