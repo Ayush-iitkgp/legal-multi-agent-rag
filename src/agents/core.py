@@ -21,7 +21,7 @@ async def analyze_query(
     history: Sequence[HumanMessage | AIMessage],
 ) -> QueryAnalysis:
     model = make_chat_model()
-    history_summary = "\n".join(m.content for m in history[-4:]) if history else "None"
+    history_summary = "\n".join(m.content for m in history[-8:]) if history else "None"
     prompt = (
         "You are a routing agent for a legal contract Q&A system.\n"
         "The corpus contains four agreements:\n"
@@ -80,10 +80,16 @@ async def answer_with_optional_risks(
     is_risk_query: bool,
 ) -> str:
     model = make_chat_model()
-    context = "\n\n".join(
-        f"[{i+1}] {d.metadata.get('source')}, section: {d.metadata.get('section_title')}\n{d.page_content}"
-        for i, d in enumerate(docs)
-    )
+
+    def _cite(i: int, d: Document) -> str:
+        source = d.metadata.get("source", "unknown")
+        title = (
+            d.metadata.get("section_title")
+            or f"Section {d.metadata.get('section_index', i + 1)}"
+        )
+        return f"[{i+1}] {source}, section: {title}\n{d.page_content}"
+
+    context = "\n\n".join(_cite(i, d) for i, d in enumerate(docs))
     risk_instructions = (
         "Because this question is primarily about risk or exposure, you MUST also add a "
         "'Risk flags:' section after the main answer. In that section, list concise bullet "

@@ -96,37 +96,38 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
     all_docs: List[Document] = retriever.invoke(base_query)
 
     # Reduce phase: de-duplicate and filter to routed document types, if provided.
-    seen_keys: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     reduced: List[Document] = []
     # For risk queries, allow clauses from all agreements; otherwise, respect routing.
     allowed_types = set() if is_risk else set(state.routed_doc_types)
-
-    def _key(d: Document) -> tuple[str, str]:
-        source = str(d.metadata.get("source", "unknown"))
-        section = str(d.metadata.get("section_index", "0"))
-        return source, section
 
     for d in all_docs:
         if allowed_types:
             doc_type = d.metadata.get("document_type")
             if not doc_type or doc_type not in allowed_types:
                 continue
-        k = _key(d)
-        if k in seen_keys:
-            continue
-        seen_keys.add(k)
-        reduced.append(d)
+        key = (
+            str(d.metadata.get("source", "unknown")),
+            str(d.metadata.get("section_index", "0")),
+            str(d.metadata.get("section_title", "")),
+        )
+        if key not in seen:
+            seen.add(key)
+            reduced.append(d)
 
     # Safety net: if routing filters everything out, fall back to all_docs (deduped)
     # instead of leaving retrieval empty, which would force the LLM to hallucinate.
     if not reduced and all_docs:
-        seen_keys.clear()
+        seen.clear()
         for d in all_docs:
-            k = _key(d)
-            if k in seen_keys:
-                continue
-            seen_keys.add(k)
-            reduced.append(d)
+            key = (
+                str(d.metadata.get("source", "unknown")),
+                str(d.metadata.get("section_index", "0")),
+                str(d.metadata.get("section_title", "")),
+            )
+            if key not in seen:
+                seen.add(key)
+                reduced.append(d)
 
     state.retrieved = reduced
     state.clauses = reduced
