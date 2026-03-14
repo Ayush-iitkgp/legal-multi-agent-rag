@@ -1,0 +1,347 @@
+[
+  {
+    "question": "What is the notice period for terminating the NDA?",
+    "query_analysis": {
+      "query_type": "fact_lookup",
+      "doc_targets": [
+        "nda"
+      ]
+    },
+    "is_risk_query": false,
+    "routed_doc_types": [
+      "nda_acme_vendor"
+    ],
+    "retrieved": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 4,
+        "section_title": "Term and Termination",
+        "text": "3. Term and Termination\n\nThis Agreement shall remain in effect for three (3) years from the effective date.\nEither party may terminate this Agreement with thirty (30) days written notice.\n\nConfidentiality obligations shall survive termination for five (5) years."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 1,
+        "section_title": "NON-DISCLOSURE AGREEMENT (NDA)",
+        "text": "NON-DISCLOSURE AGREEMENT (NDA)\n\nThis Non-Disclosure Agreement (\u201cAgreement\u201d) is entered into between Acme Corp (\u201cDisclosing Party\u201d) and Vendor XYZ Pvt. Ltd. (\u201cReceiving Party\u201d), effective January 1, 2024."
+      }
+    ],
+    "clauses": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 4,
+        "section_title": "Term and Termination",
+        "text": "3. Term and Termination\n\nThis Agreement shall remain in effect for three (3) years from the effective date.\nEither party may terminate this Agreement with thirty (30) days written notice.\n\nConfidentiality obligations shall survive termination for five (5) years."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 1,
+        "section_title": "NON-DISCLOSURE AGREEMENT (NDA)",
+        "text": "NON-DISCLOSURE AGREEMENT (NDA)\n\nThis Non-Disclosure Agreement (\u201cAgreement\u201d) is entered into between Acme Corp (\u201cDisclosing Party\u201d) and Vendor XYZ Pvt. Ltd. (\u201cReceiving Party\u201d), effective January 1, 2024."
+      }
+    ],
+    "final_answer": "The notice period for terminating the Non-Disclosure Agreement (NDA) is [30] days[2]."
+  },
+  {
+    "question": "What is the uptime commitment in the SLA?",
+    "query_analysis": {
+      "query_type": "fact_lookup",
+      "doc_targets": [
+        "service_level"
+      ]
+    },
+    "is_risk_query": false,
+    "routed_doc_types": [
+      "service_level_agreement"
+    ],
+    "retrieved": [
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 2,
+        "section_title": "Service Availability",
+        "text": "1. Service Availability\n\nVendor shall ensure 99.5% monthly uptime."
+      },
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 3,
+        "section_title": "Service Credits",
+        "text": "2. Service Credits\n\nIf uptime falls below the agreed threshold:\n\nVendor shall provide service credits as defined in Schedule B\n\nService credits are the sole and exclusive remedy"
+      },
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 4,
+        "section_title": "Exclusions",
+        "text": "3. Exclusions\n\nDowntime caused by:\n\nScheduled maintenance\n\nForce majeure events\n\nCustomer misconfiguration\nshall be excluded from uptime calculations."
+      }
+    ],
+    "clauses": [
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 2,
+        "section_title": "Service Availability",
+        "text": "1. Service Availability\n\nVendor shall ensure 99.5% monthly uptime."
+      },
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 3,
+        "section_title": "Service Credits",
+        "text": "2. Service Credits\n\nIf uptime falls below the agreed threshold:\n\nVendor shall provide service credits as defined in Schedule B\n\nService credits are the sole and exclusive remedy"
+      },
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 4,
+        "section_title": "Exclusions",
+        "text": "3. Exclusions\n\nDowntime caused by:\n\nScheduled maintenance\n\nForce majeure events\n\nCustomer misconfiguration\nshall be excluded from uptime calculations."
+      }
+    ],
+    "final_answer": "The uptime commitment in the Service Level Agreement (SLA) is 99.5% monthly uptime, as stated in [1] service_level_agreement.txt, section: Service Availability.\n\nCitations used:\n[1] service_level_agreement.txt, section: Service Availability"
+  },
+  {
+    "question": "Which law governs the Vendor Services Agreement?",
+    "query_analysis": {
+      "query_type": "fact_lookup",
+      "doc_targets": [
+        "vendor_services"
+      ]
+    },
+    "is_risk_query": false,
+    "routed_doc_types": [
+      "vendor_services_agreement"
+    ],
+    "retrieved": [
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 7,
+        "section_title": "Governing Law",
+        "text": "6. Governing Law\n\nThis Agreement shall be governed by the laws of England and Wales."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 2,
+        "section_title": "Scope of Services",
+        "text": "1. Scope of Services\n\nVendor shall provide software development and maintenance services as described in Schedule A."
+      }
+    ],
+    "clauses": [
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 7,
+        "section_title": "Governing Law",
+        "text": "6. Governing Law\n\nThis Agreement shall be governed by the laws of England and Wales."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 2,
+        "section_title": "Scope of Services",
+        "text": "1. Scope of Services\n\nVendor shall provide software development and maintenance services as described in Schedule A."
+      }
+    ],
+    "final_answer": "The governing law for the Vendor Services Agreement is [1], Section 6, Governing Law.\n\nCitations used:\n[1] vendor_services_agreement.txt, section: Governing Law."
+  },
+  {
+    "question": "Do confidentiality obligations survive termination of the NDA?",
+    "query_analysis": {
+      "query_type": "fact_lookup",
+      "doc_targets": [
+        "nda"
+      ]
+    },
+    "is_risk_query": false,
+    "routed_doc_types": [
+      "nda_acme_vendor"
+    ],
+    "retrieved": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 4,
+        "section_title": "Term and Termination",
+        "text": "3. Term and Termination\n\nThis Agreement shall remain in effect for three (3) years from the effective date.\nEither party may terminate this Agreement with thirty (30) days written notice.\n\nConfidentiality obligations shall survive termination for five (5) years."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 2,
+        "section_title": "Definition of Confidential Information",
+        "text": "1. Definition of Confidential Information\n\n\u201cConfidential Information\u201d means any non-public information disclosed by the Disclosing Party, including but not limited to business plans, technical data, customer information, pricing, and trade secrets.\n\nInformation shall not be considered confidential if it:\n\nIs publicly available without breach of this Agreement\n\nWas lawfully known prior to disclosure\n\nIs independently developed without use of Confidential Information"
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 5,
+        "section_title": "Liability",
+        "text": "4. Liability\n\nThe Receiving Party shall be liable for damages arising from breach of this Agreement.\nNo explicit limitation of liability is specified."
+      }
+    ],
+    "clauses": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 4,
+        "section_title": "Term and Termination",
+        "text": "3. Term and Termination\n\nThis Agreement shall remain in effect for three (3) years from the effective date.\nEither party may terminate this Agreement with thirty (30) days written notice.\n\nConfidentiality obligations shall survive termination for five (5) years."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 2,
+        "section_title": "Definition of Confidential Information",
+        "text": "1. Definition of Confidential Information\n\n\u201cConfidential Information\u201d means any non-public information disclosed by the Disclosing Party, including but not limited to business plans, technical data, customer information, pricing, and trade secrets.\n\nInformation shall not be considered confidential if it:\n\nIs publicly available without breach of this Agreement\n\nWas lawfully known prior to disclosure\n\nIs independently developed without use of Confidential Information"
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 5,
+        "section_title": "Liability",
+        "text": "4. Liability\n\nThe Receiving Party shall be liable for damages arising from breach of this Agreement.\nNo explicit limitation of liability is specified."
+      }
+    ],
+    "final_answer": "Based on the provided context clauses, [1] and [2], we can determine that confidentiality obligations do not explicitly survive termination of the NDA. \n\n[1] nda_acme_vendor.txt, section: Term and Termination\n3. Term and Termination\n\nThis Agreement shall remain in effect for three (3) years from the effective date.\n\nEither party may terminate this Agreement with thirty (30) days written notice.\n\nConfidentiality obligations shall survive termination for five (5) years.\n\n[2] nda_acme_vendor.txt, section: Definition of Confidential Information\n1. Definition of Confidential Information\n\n\u201cConfidential Information\u201d means any non-public information disclosed by the Disclosing Party, including but not limited to business plans, technical data, customer information, pricing, and trade secrets.\n\nInformation shall not be considered confidential if it:\n\nIs publicly available without breach of this Agreement\n\nWas lawfully known prior to disclosure\n\nIs independently developed without use of Confidential Information\n\nThe NDA does not explicitly state that confidentiality obligations survive termination. Therefore, the answer is no, confidentiality obligations do not survive termination of the NDA.\n\nCitations used:\n[1] nda_acme_vendor.txt, section: Term and Termination\n[2] nda_acme_vendor.txt, section: Definition of Confidential Information"
+  },
+  {
+    "question": "Is liability capped for breach of confidentiality?",
+    "query_analysis": {
+      "query_type": "fact_lookup",
+      "doc_targets": [
+        "liability"
+      ]
+    },
+    "is_risk_query": false,
+    "routed_doc_types": [
+      "data_processing_agreement",
+      "nda_acme_vendor",
+      "service_level_agreement",
+      "vendor_services_agreement"
+    ],
+    "retrieved": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 5,
+        "section_title": "Liability",
+        "text": "4. Liability\n\nThe Receiving Party shall be liable for damages arising from breach of this Agreement.\nNo explicit limitation of liability is specified."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 5,
+        "section_title": "Limitation of Liability",
+        "text": "4. Limitation of Liability\n\nExcept for indemnification obligations and gross negligence:\n\nEach party\u2019s total liability shall not exceed the total fees paid in the preceding 12 months"
+      },
+      {
+        "source": "data_processing_agreement.txt",
+        "document_type": "data_processing_agreement",
+        "section_index": 6,
+        "section_title": "Liability",
+        "text": "5. Liability\n\nThe DPA does not specify an independent liability cap and relies on the Vendor Services Agreement."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 2,
+        "section_title": "Definition of Confidential Information",
+        "text": "1. Definition of Confidential Information\n\n\u201cConfidential Information\u201d means any non-public information disclosed by the Disclosing Party, including but not limited to business plans, technical data, customer information, pricing, and trade secrets.\n\nInformation shall not be considered confidential if it:\n\nIs publicly available without breach of this Agreement\n\nWas lawfully known prior to disclosure\n\nIs independently developed without use of Confidential Information"
+      },
+      {
+        "source": "data_processing_agreement.txt",
+        "document_type": "data_processing_agreement",
+        "section_index": 4,
+        "section_title": "Data Breach Notification",
+        "text": "3. Data Breach Notification\n\nIn the event of a personal data breach:\n\nProcessor shall notify Controller without undue delay\n\nIn any case, notification shall occur within 72 hours of becoming aware of the breach"
+      },
+      {
+        "source": "data_processing_agreement.txt",
+        "document_type": "data_processing_agreement",
+        "section_index": 3,
+        "section_title": "Data Security",
+        "text": "2. Data Security\n\nProcessor shall implement appropriate technical and organizational measures to protect personal data."
+      },
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 5,
+        "section_title": "Liability",
+        "text": "4. Liability\n\nVendor shall not be liable for indirect, incidental, or consequential damages."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 6,
+        "section_title": "Termination",
+        "text": "5. Termination\n\nEither party may terminate:\n\nFor convenience, with 60 days written notice\n\nImmediately, in case of material breach not cured within 15 days"
+      }
+    ],
+    "clauses": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 5,
+        "section_title": "Liability",
+        "text": "4. Liability\n\nThe Receiving Party shall be liable for damages arising from breach of this Agreement.\nNo explicit limitation of liability is specified."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 5,
+        "section_title": "Limitation of Liability",
+        "text": "4. Limitation of Liability\n\nExcept for indemnification obligations and gross negligence:\n\nEach party\u2019s total liability shall not exceed the total fees paid in the preceding 12 months"
+      },
+      {
+        "source": "data_processing_agreement.txt",
+        "document_type": "data_processing_agreement",
+        "section_index": 6,
+        "section_title": "Liability",
+        "text": "5. Liability\n\nThe DPA does not specify an independent liability cap and relies on the Vendor Services Agreement."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "document_type": "nda_acme_vendor",
+        "section_index": 2,
+        "section_title": "Definition of Confidential Information",
+        "text": "1. Definition of Confidential Information\n\n\u201cConfidential Information\u201d means any non-public information disclosed by the Disclosing Party, including but not limited to business plans, technical data, customer information, pricing, and trade secrets.\n\nInformation shall not be considered confidential if it:\n\nIs publicly available without breach of this Agreement\n\nWas lawfully known prior to disclosure\n\nIs independently developed without use of Confidential Information"
+      },
+      {
+        "source": "data_processing_agreement.txt",
+        "document_type": "data_processing_agreement",
+        "section_index": 4,
+        "section_title": "Data Breach Notification",
+        "text": "3. Data Breach Notification\n\nIn the event of a personal data breach:\n\nProcessor shall notify Controller without undue delay\n\nIn any case, notification shall occur within 72 hours of becoming aware of the breach"
+      },
+      {
+        "source": "data_processing_agreement.txt",
+        "document_type": "data_processing_agreement",
+        "section_index": 3,
+        "section_title": "Data Security",
+        "text": "2. Data Security\n\nProcessor shall implement appropriate technical and organizational measures to protect personal data."
+      },
+      {
+        "source": "service_level_agreement.txt",
+        "document_type": "service_level_agreement",
+        "section_index": 5,
+        "section_title": "Liability",
+        "text": "4. Liability\n\nVendor shall not be liable for indirect, incidental, or consequential damages."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "document_type": "vendor_services_agreement",
+        "section_index": 6,
+        "section_title": "Termination",
+        "text": "5. Termination\n\nEither party may terminate:\n\nFor convenience, with 60 days written notice\n\nImmediately, in case of material breach not cured within 15 days"
+      }
+    ],
+    "final_answer": "Based on the provided context clauses, [1], [2], and [3], it appears that there is no explicit limitation on liability for breach of confidentiality. The only clause that mentions a limit on liability is [4] which states that each party's total liability shall not exceed the total fees paid in the preceding 12 months.\n\nTherefore, the answer to the question \"Is liability capped for breach of confidentiality?\" is:\n\nNo, liability is not capped for breach of confidentiality.\n\nCitations used:\n[1] nda_acme_vendor.txt, section: Liability\n[2] vendor_services_agreement.txt, section: Limitation of Liability\n[3] data_processing_agreement.txt, section: Liability"
+  }
+]
