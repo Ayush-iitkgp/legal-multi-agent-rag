@@ -258,6 +258,22 @@ export OPENAI_API_KEY="sk-..."
 
 Models used: `gpt-4.1-mini` (chat) and `text-embedding-3-small` (embeddings).
 
+### 4.5 LangSmith tracing (optional)
+
+[LangSmith](https://smith.langchain.com/) provides end-to-end tracing for every LangGraph run — latencies, token counts, prompts, and retrieved documents.
+
+1. Create a free account at [smith.langchain.com](https://smith.langchain.com/) and generate an API key.
+2. Add the key to your `.env` file (copy from `.env.example`):
+
+```bash
+cp .env.example .env
+# then edit .env:
+LANGCHAIN_API_KEY=lsv2_pt_...
+LANGCHAIN_PROJECT=legal-multi-agent-rag   # optional, defaults to this value
+```
+
+The app automatically enables tracing when `LANGCHAIN_API_KEY` is present. If the key is missing, tracing is silently disabled and the app works normally.
+
 ---
 
 ## 5. Running the console app

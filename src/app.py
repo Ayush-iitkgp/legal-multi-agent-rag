@@ -1,3 +1,7 @@
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -5,10 +9,21 @@ from src.graph import GraphState, build_graph
 from langchain_core.messages import HumanMessage
 import asyncio
 
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+os.environ.setdefault("LANGCHAIN_PROJECT", "legal-multi-agent-rag")
+
 console = Console()
 
 
 async def main() -> None:
+    if not os.environ.get("LANGCHAIN_API_KEY"):
+        console.print(
+            "[yellow]LANGCHAIN_API_KEY not set — LangSmith tracing disabled.[/yellow]"
+        )
+        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+
     graph = build_graph().compile()
     state = GraphState()
 
