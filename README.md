@@ -339,7 +339,54 @@ For each query, the system will:
 
 ## 7. Evaluation approach
 
-Basic evaluation is manual / scenario‑based, using the sample queries from the assignment:
+### 7.1 Automated Recall@K evaluation
+
+The project includes an automated **Recall@K** pipeline that measures retrieval quality independently of the LLM.
+
+**Ground truth** is defined in `src/eval/ground_truth.json` — each sample query is annotated with the relevant `(source, section_index)` pairs and an `expected_text` snippet that must appear in the retrieved chunk.
+
+**Two recall metrics** are computed per query:
+
+- **Section Recall@K** – was the correct section (by source + section_index) present in the top‑K retrieved chunks?
+- **Text Recall@K** – does the retrieved chunk's content actually contain the expected key phrase?
+
+**Step 1** – Generate eval outputs (runs all sample queries through the full LangGraph pipeline):
+
+```bash
+poetry run python -m src.eval.run_eval
+```
+
+This produces `eval_outputs.json` with the full graph state (query_analysis, retrieved chunks, final answer) for each query.
+
+**Step 2** – Compute Recall@K against ground truth:
+
+```bash
+poetry run python -m src.eval.recall --eval eval_outputs.json --k 8
+```
+
+Sample output:
+
+```text
+==============================================================================
+  Recall@8 Evaluation  (section match + text content match)
+==============================================================================
+
+  [PASS]  What is the notice period for terminating the NDA?
+         Section Recall@8 = 1.00  (1/1)
+         Text    Recall@8 = 1.00  (1/1)
+           ✓ sec | ✓ txt  nda_acme_vendor.txt §4 (Term and Termination)
+
+  ...
+
+──────────────────────────────────────────────────────────────────────────────
+  Average Section Recall@8:  1.00  (5 queries)
+  Average Text    Recall@8:  1.00  (5 queries)
+──────────────────────────────────────────────────────────────────────────────
+```
+
+### 7.2 Manual evaluation
+
+In addition to the automated recall check, manual scenario‑based evaluation covers:
 
 - Coverage questions:
   - "What is the notice period for terminating the NDA?"
@@ -358,13 +405,11 @@ For each query we check:
 - **Citation quality** – Do the referenced clauses `[1], [2], …` correspond to relevant sections?
 - **Risk sensitivity** – Does the system flag key exposures (uncapped liability, conflicting laws, breach timelines) when asked?
 
-Due to the small corpus size, a lightweight manual checklist is sufficient and easy to run end‑to‑end.
+### 7.3 Limitations
 
-**Limitations of this evaluation**
-
-- No automated metrics (e.g. retrieval‑hit rate, answer correctness scores).
-- No large‑scale test set; focused on a curated handful of high‑signal questions.
-- Human judgment required to mark answers as acceptable or not.
+- Ground truth is manually curated for a small set of queries; a production system would need a larger annotated test set.
+- Recall@K measures retrieval quality only — answer correctness requires LLM‑as‑a‑Judge (see production enhancements).
+- Human judgment is still required for nuanced legal reasoning quality.
 
 ---
 

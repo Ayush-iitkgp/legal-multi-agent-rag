@@ -97,7 +97,7 @@ small{font-size:.82rem;color:var(--muted)}
     <span class="tag red">RAG</span>
   </div>
   <p style="margin-top:40px;color:var(--muted);font-size:.95rem">Ayush Pandey</p>
-  <div class="slide-num">1 / 11</div>
+  <div class="slide-num">1 / 13</div>
 </div>
 
 <!-- SLIDE 2: Problem Statement -->
@@ -133,7 +133,7 @@ small{font-size:.82rem;color:var(--muted)}
       </div>
     </div>
   </div>
-  <div class="slide-num">2 / 11</div>
+  <div class="slide-num">2 / 13</div>
 </div>
 
 <!-- SLIDE 3: Architecture -->
@@ -167,10 +167,60 @@ small{font-size:.82rem;color:var(--muted)}
     <div class="box green-border"><strong>Clause Extractor</strong><br><small>Vector search → metadata filter by document_type → dedup by (source, section).</small></div>
     <div class="box orange-border"><strong>Answer + Risk</strong><br><small>Single LLM call. Grounded answer with [n] citations. Risk flags only if is_risk_query.</small></div>
   </div>
-  <div class="slide-num">3 / 11</div>
+  <div class="slide-num">3 / 13</div>
 </div>
 
-<!-- SLIDE 4: RAG Ingestion -->
+<!-- SLIDE 4: Router — query_type, doc_targets & Prompting -->
+<div class="slide">
+  <h2>Router Classification &amp; Prompting Strategy</h2>
+  <div class="grid2">
+    <div>
+      <h3>query_type — Intent Classification</h3>
+      <div class="box accent-border">
+        <table>
+          <tr><th>query_type</th><th>When</th><th>Effect</th></tr>
+          <tr><td><code>fact_lookup</code></td><td>Direct clause question from one agreement</td><td>top_k = 8, filter by doc</td></tr>
+          <tr><td><code>cross_agreement_compare</code></td><td>Comparing terms across multiple agreements</td><td>top_k = 8, multi-doc filter</td></tr>
+          <tr><td><code>risk_summary</code></td><td>Risk, exposure, or legal strategy questions</td><td>top_k = 16, no filter, adds Risk flags</td></tr>
+          <tr><td><code>other</code></td><td>Anything else</td><td>Fallback to all docs</td></tr>
+        </table>
+      </div>
+      <div class="box green-border mt">
+        <h3>doc_targets — Document Routing</h3>
+        <table>
+          <tr><th>Label</th><th>Maps To</th></tr>
+          <tr><td><code>nda</code></td><td>nda_acme_vendor</td></tr>
+          <tr><td><code>vendor_services</code></td><td>vendor_services_agreement</td></tr>
+          <tr><td><code>service_level</code></td><td>service_level_agreement</td></tr>
+          <tr><td><code>dpa</code></td><td>data_processing_agreement</td></tr>
+          <tr><td><code>all</code></td><td>All four agreements</td></tr>
+        </table>
+        <p class="mt"><small>Fallback: if LLM returns unknown targets → defaults to <code>all</code>.</small></p>
+      </div>
+    </div>
+    <div>
+      <h3>Prompting Strategies Used</h3>
+      <div class="box orange-border">
+        <div class="bullet orange"><strong>Few-shot examples</strong> — the router prompt includes 5 annotated examples mapping questions to query_type + doc_targets</div>
+        <div class="bullet orange"><strong>Structured JSON output</strong> — LLM is told to "Respond as JSON with keys query_type and doc_targets"</div>
+        <div class="bullet orange"><strong>Persona prompting</strong> — "You are a routing agent for a legal contract Q&A system"</div>
+        <div class="bullet orange"><strong>Constrained enums</strong> — query_type and doc_targets are defined as exact value sets</div>
+        <div class="bullet orange"><strong>History-aware</strong> — last 8 messages included for multi-turn context</div>
+      </div>
+      <div class="box mt" style="border-left:4px solid var(--accent4)">
+        <h3>Answer Agent Prompting</h3>
+        <div class="bullet red"><strong>Persona</strong> — "You are a legal contracts analyst for Acme Corp"</div>
+        <div class="bullet red"><strong>Grounding constraint</strong> — "Use ONLY the context clauses below"</div>
+        <div class="bullet red"><strong>Citation format</strong> — explicit template: <code>[n] file.txt, section: title</code></div>
+        <div class="bullet red"><strong>Conditional instructions</strong> — risk flags section toggled via <code>is_risk_query</code> flag</div>
+        <div class="bullet red"><strong>Negative instruction</strong> — "do NOT add any Risk flags section" for non-risk queries</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">4 / 13</div>
+</div>
+
+<!-- SLIDE 5: RAG Ingestion -->
 <div class="slide">
   <h2>RAG Ingestion Workflow</h2>
   <div class="flow">
@@ -203,10 +253,10 @@ small{font-size:.82rem;color:var(--muted)}
       <p class="mt"><small>document_type = filename stem, used for routing filter.</small></p>
     </div>
   </div>
-  <div class="slide-num">4 / 11</div>
+  <div class="slide-num">5 / 13</div>
 </div>
 
-<!-- SLIDE 5: Agent Flow -->
+<!-- SLIDE 6: Agent Flow -->
 <div class="slide">
   <h2>Retrieval + Agent Interaction Flow</h2>
   <div class="code-block">User: "What is the notice period for terminating the NDA?"
@@ -239,10 +289,11 @@ small{font-size:.82rem;color:var(--muted)}
       <p>If routing filters remove <em>all</em> results, the system falls back to full unfiltered retrieval (still deduped) to prevent empty-context hallucination.</p>
     </div>
   </div>
-  <div class="slide-num">5 / 11</div>
+  <div class="slide-num">6 / 13</div>
 </div>
 
-<!-- SLIDE 6: Design Decisions - Models -->
+<!-- SLIDE 7: Design Decisions - Models -->
+
 <div class="slide">
   <h2>Design Decisions — Model Selection</h2>
   <div class="grid3">
@@ -274,19 +325,27 @@ small{font-size:.82rem;color:var(--muted)}
       <p class="mt"><span class="tag green">Selected</span></p>
     </div>
   </div>
-  <div class="box mt" style="border-left:4px solid var(--accent)">
-    <h3>Why Ollama?</h3>
-    <div style="display:flex;gap:40px;flex-wrap:wrap">
-      <div class="bullet"><strong>Free</strong> — no API costs</div>
-      <div class="bullet"><strong>Local</strong> — data stays on-premise</div>
-      <div class="bullet"><strong>Low latency</strong> — no network round-trips</div>
-      <div class="bullet"><strong>Reproducible</strong> — Docker Compose setup</div>
+  <div class="grid2 mt">
+    <div class="box" style="border-left:4px solid var(--accent)">
+      <h3>Why Ollama?</h3>
+      <div style="display:flex;gap:40px;flex-wrap:wrap">
+        <div class="bullet"><strong>Free</strong> — no API costs</div>
+        <div class="bullet"><strong>Local</strong> — data stays on-premise</div>
+        <div class="bullet"><strong>Low latency</strong> — no network round-trips</div>
+        <div class="bullet"><strong>Reproducible</strong> — Docker Compose setup</div>
+      </div>
+    </div>
+    <div class="box" style="border-left:4px solid var(--accent2)">
+      <h3>Temperature = 0</h3>
+      <div class="bullet orange"><strong>All backends</strong> (Ollama, OpenAI, Gemini) set to <code>temperature=0</code></div>
+      <div class="bullet orange"><strong>Deterministic outputs</strong> — same question always yields the same answer</div>
+      <div class="bullet orange"><strong>Legal use case</strong> — no creative variation; grounded, reproducible responses are critical</div>
     </div>
   </div>
-  <div class="slide-num">6 / 11</div>
+  <div class="slide-num">7 / 13</div>
 </div>
 
-<!-- SLIDE 7: Chunking & Embeddings -->
+<!-- SLIDE 8: Chunking & Embeddings -->
 <div class="slide">
   <h2>Why Section-Based Chunking &amp; Nomic Embeddings</h2>
   <div class="grid2">
@@ -310,26 +369,23 @@ small{font-size:.82rem;color:var(--muted)}
       <h3>Why nomic-embed-text?</h3>
       <div class="box green-border">
         <div class="bullet green"><strong>Open-source</strong> — no API key needed, runs locally via Ollama</div>
-        <div class="bullet green"><strong>High quality</strong> — 768-dim embeddings, strong on MTEB benchmarks</div>
+        <div class="bullet green"><strong>High quality</strong> — 768-dim embeddings</div>
         <div class="bullet green"><strong>Long context</strong> — 8192 token window, handles full legal clauses</div>
         <div class="bullet green"><strong>Small footprint</strong> — ~274 MB, fits alongside the LLM in Docker</div>
-        <div class="bullet green"><strong>Matryoshka support</strong> — can truncate dimensions for speed</div>
       </div>
       <div class="box mt" style="border-left:4px solid var(--muted)">
         <h3>Alternatives Considered</h3>
         <table>
           <tr><th>Model</th><th>Why Not</th></tr>
           <tr><td>OpenAI ada-3</td><td>API cost, data leaves premise</td></tr>
-          <tr><td>all-MiniLM</td><td>Lower quality on legal text</td></tr>
-          <tr><td>BGE-large</td><td>Larger footprint, marginal gain</td></tr>
         </table>
       </div>
     </div>
   </div>
-  <div class="slide-num">7 / 11</div>
+  <div class="slide-num">8 / 13</div>
 </div>
 
-<!-- SLIDE 8: Retrieval Strategy -->
+<!-- SLIDE 9: Retrieval Strategy -->
 <div class="slide">
   <h2>Retrieval Strategy</h2>
   <div class="grid2">
@@ -356,7 +412,6 @@ small{font-size:.82rem;color:var(--muted)}
     <h3>Why These Numbers?</h3>
     <div class="grid2" style="margin-top:8px">
       <div>
-        <div class="bullet"><strong>8</strong> balances recall vs. prompt length for a small corpus (~25 total chunks across 4 docs)</div>
         <div class="bullet">After filtering + dedup, typically 2–5 chunks reach the LLM</div>
       </div>
       <div>
@@ -365,10 +420,10 @@ small{font-size:.82rem;color:var(--muted)}
       </div>
     </div>
   </div>
-  <div class="slide-num">8 / 11</div>
+  <div class="slide-num">9 / 13</div>
 </div>
 
-<!-- SLIDE 9: Agent Prompts -->
+<!-- SLIDE 10: Agent Prompts -->
 <div class="slide">
   <h2>Agent Prompts — Unified Answer + Risk</h2>
   <div class="grid2">
@@ -412,16 +467,65 @@ else:
       </div>
     </div>
   </div>
-  <div class="slide-num">9 / 11</div>
+  <div class="slide-num">10 / 13</div>
 </div>
 
-<!-- SLIDE 10: Evaluation -->
+<!-- SLIDE 11: Evaluation -->
 <div class="slide">
-  <h2>Evaluation Approach</h2>
+  <h2>Evaluation — Automated Recall@K</h2>
+  <p class="subtitle" style="margin-bottom:16px">Two-metric retrieval evaluation pipeline implemented in <code>src/eval/</code></p>
+  <div class="grid2">
+    <div>
+      <h3>Two Recall Metrics</h3>
+      <div class="box accent-border">
+        <div class="bullet"><strong>Section Recall@K</strong> — was the correct <code>(source, section_index)</code> present in the top‑K retrieved chunks?</div>
+        <div class="bullet"><strong>Text Recall@K</strong> — does the retrieved chunk's content actually contain the expected key phrase?</div>
+        <p class="mt"><small>Text recall catches cases where the right section is retrieved but with corrupted or incomplete content.</small></p>
+      </div>
+      <div class="box orange-border mt">
+        <h3>Ground Truth Format</h3>
+        <div class="code-block" style="font-size:.75rem">{
+  "source": "nda_acme_vendor.txt",
+  "section_index": 4,
+  "section_title": "Term and Termination",
+  "expected_text": "thirty (30) days written notice"
+}</div>
+        <p class="mt"><small>Defined in <code>src/eval/ground_truth.json</code> — 5 queries, 7 total ground‑truth sections.</small></p>
+      </div>
+    </div>
+    <div>
+      <h3>Commands</h3>
+      <div class="box green-border">
+        <p><strong>Step 1</strong> — Generate eval outputs:</p>
+        <div class="code-block" style="font-size:.78rem">poetry run python -m src.eval.run_eval</div>
+        <p class="mt"><strong>Step 2</strong> — Compute Recall@K:</p>
+        <div class="code-block" style="font-size:.78rem">poetry run python -m src.eval.recall \
+  --eval eval_outputs.json --k 8</div>
+      </div>
+      <div class="box mt" style="border-left:4px solid var(--accent3)">
+        <h3>Results (Current)</h3>
+        <table>
+          <tr><th>Query</th><th>Sec</th><th>Txt</th></tr>
+          <tr><td>Notice period for NDA?</td><td style="color:var(--accent3)">1/1</td><td style="color:var(--accent3)">1/1</td></tr>
+          <tr><td>Uptime commitment in SLA?</td><td style="color:var(--accent3)">1/1</td><td style="color:var(--accent3)">1/1</td></tr>
+          <tr><td>Law governing Vendor Agreement?</td><td style="color:var(--accent3)">1/1</td><td style="color:var(--accent3)">1/1</td></tr>
+          <tr><td>Confidentiality survive termination?</td><td style="color:var(--accent3)">1/1</td><td style="color:var(--accent3)">1/1</td></tr>
+          <tr><td>Liability capped for confidentiality?</td><td style="color:var(--accent3)">3/3</td><td style="color:var(--accent3)">3/3</td></tr>
+          <tr style="border-top:2px solid var(--accent)"><td><strong>Average Recall@8</strong></td><td><strong style="color:var(--accent3)">1.00</strong></td><td><strong style="color:var(--accent3)">1.00</strong></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">11 / 13</div>
+</div>
+
+<!-- SLIDE 12: Evaluation - Future -->
+<div class="slide">
+  <h2>Evaluation — Future: LLM‑as‑a‑Judge</h2>
+  <p class="subtitle" style="margin-bottom:16px">Recall@K measures retrieval; LLM‑as‑a‑Judge would measure answer quality</p>
   <div class="grid2">
     <div class="box accent-border">
-      <h3>LLM-as-a-Judge</h3>
-      <p>Use a strong LLM (e.g. GPT-4) to evaluate answer quality on three axes:</p>
+      <h3>What It Would Evaluate</h3>
       <table class="mt">
         <tr><th>Criterion</th><th>What It Measures</th></tr>
         <tr><td><strong>Faithfulness</strong></td><td>Is the answer grounded in the cited clauses? No hallucinated facts.</td></tr>
@@ -430,26 +534,23 @@ else:
       </table>
       <p class="mt"><small>Each criterion scored 1–5. Judge prompt includes the question, retrieved context, and generated answer.</small></p>
     </div>
-    <div class="box green-border">
-      <h3>Recall@K</h3>
-      <p>Measures retrieval quality independent of the LLM:</p>
-      <div class="bullet green"><strong>Recall@8</strong> — for normal queries: what fraction of ground-truth clauses appear in the top-8?</div>
-      <div class="bullet green"><strong>Recall@16</strong> — for risk queries: recall with wider fan-out</div>
+    <div class="box orange-border">
+      <h3>How It Complements Recall@K</h3>
+      <div class="bullet orange"><strong>Recall@K</strong> answers: "Did we retrieve the right clauses?"</div>
+      <div class="bullet orange"><strong>LLM Judge</strong> answers: "Did the LLM use those clauses correctly?"</div>
+      <div class="bullet orange">Together they cover the full RAG pipeline: ingestion → retrieval → generation</div>
       <div class="mt">
-        <p><strong>How to compute:</strong></p>
-        <div class="code-block" style="font-size:.8rem">Recall@K = |relevant ∩ retrieved_top_k|
-           / |relevant|
-
-Gold labels: manually annotated
-(question → relevant sections)</div>
+        <h3>Current Limitations</h3>
+        <div class="bullet red">Ground truth is small (5 queries, 7 sections)</div>
+        <div class="bullet red">No automated answer scoring yet</div>
+        <div class="bullet red">Human judgment still needed for nuanced legal reasoning</div>
       </div>
-      <p class="mt"><small>Evaluates retrieval separately from generation — isolates chunking and embedding quality.</small></p>
     </div>
   </div>
-  <div class="slide-num">10 / 11</div>
+  <div class="slide-num">12 / 13</div>
 </div>
 
-<!-- SLIDE 11: Production Enhancements -->
+<!-- SLIDE 13: Production Enhancements -->
 <div class="slide">
   <h2>Production Enhancements</h2>
   <div class="grid3">
@@ -486,8 +587,37 @@ Gold labels: manually annotated
       <div class="bullet">Cosine similarity threshold to match cache hits</div>
       <div class="bullet">Saves LLM calls, cuts latency to near-zero for repeats</div>
     </div>
+    <div class="box green-border">
+      <h3>Eval Data Pipeline</h3>
+      <div class="bullet green">Expand ground truth beyond 5 queries — automated generation from corpus sections</div>
+      <div class="bullet green">CI pipeline to re-run Recall@K on every model/prompt change</div>
+    </div>
+    <div class="box accent-border">
+      <h3>Async Vector DB Indexing</h3>
+      <div class="bullet">Background job to re-index when new contracts are uploaded</div>
+      <div class="bullet">Incremental upserts — no full rebuild on every change</div>
+      <div class="bullet">Scale vector DB records as corpus grows</div>
+    </div>
+    <div class="box orange-border">
+      <h3>Data Drift Monitoring</h3>
+      <div class="bullet orange">Track embedding distribution shifts as new docs arrive</div>
+      <div class="bullet orange">Alert when retrieval quality degrades (Recall@K drops)</div>
+      <div class="bullet orange">Trigger re-indexing or model retraining on drift</div>
+    </div>
+    <div class="box red-border">
+      <h3>A/B Testing</h3>
+      <div class="bullet red">Compare prompt variants, models, or retrieval strategies live</div>
+      <div class="bullet red">Route % of traffic to candidate vs. baseline</div>
+      <div class="bullet red">Measure: latency, citation accuracy, user satisfaction</div>
+    </div>
+    <div class="box" style="border-left:4px solid var(--accent3)">
+      <h3>Human-in-the-Loop Feedback</h3>
+      <div class="bullet green">Thumbs up/down on answers → label training data</div>
+      <div class="bullet green">Flag incorrect citations → refine ground truth</div>
+      <div class="bullet green">Feed corrections back into eval pipeline &amp; prompt tuning</div>
+    </div>
   </div>
-  <div class="slide-num">11 / 11</div>
+  <div class="slide-num">13 / 13</div>
 </div>
 
 </div><!-- /deck -->

@@ -1,0 +1,76 @@
+[
+  {
+    "question": "What is the notice period for terminating the NDA?",
+    "relevant_sections": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "section_index": 4,
+        "section_title": "Term and Termination",
+        "expected_text": "Either party may terminate this Agreement with thirty (30) days written notice",
+        "rationale": "Contains the notice period clause."
+      }
+    ]
+  },
+  {
+    "question": "What is the uptime commitment in the SLA?",
+    "relevant_sections": [
+      {
+        "source": "service_level_agreement.txt",
+        "section_index": 2,
+        "section_title": "Service Availability",
+        "expected_text": "Vendor shall ensure 99.5% monthly uptime",
+        "rationale": "Contains the uptime commitment."
+      }
+    ]
+  },
+  {
+    "question": "Which law governs the Vendor Services Agreement?",
+    "relevant_sections": [
+      {
+        "source": "vendor_services_agreement.txt",
+        "section_index": 7,
+        "section_title": "Governing Law",
+        "expected_text": "governed by the laws of England and Wales",
+        "rationale": "Contains the governing law clause."
+      }
+    ]
+  },
+  {
+    "question": "Do confidentiality obligations survive termination of the NDA?",
+    "relevant_sections": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "section_index": 4,
+        "section_title": "Term and Termination",
+        "expected_text": "Confidentiality obligations shall survive termination for five (5) years",
+        "rationale": "Contains the survival clause."
+      }
+    ]
+  },
+  {
+    "question": "Is liability capped for breach of confidentiality?",
+    "relevant_sections": [
+      {
+        "source": "nda_acme_vendor.txt",
+        "section_index": 5,
+        "section_title": "Liability",
+        "expected_text": "No explicit limitation of liability is specified",
+        "rationale": "States the NDA has no liability cap."
+      },
+      {
+        "source": "vendor_services_agreement.txt",
+        "section_index": 5,
+        "section_title": "Limitation of Liability",
+        "expected_text": "total liability shall not exceed the total fees paid in the preceding 12 months",
+        "rationale": "States the vendor agreement liability cap."
+      },
+      {
+        "source": "nda_acme_vendor.txt",
+        "section_index": 2,
+        "section_title": "Definition of Confidential Information",
+        "expected_text": "Confidential Information",
+        "rationale": "Defines what constitutes confidential information — necessary context for assessing liability scope."
+      }
+    ]
+  }
+]
