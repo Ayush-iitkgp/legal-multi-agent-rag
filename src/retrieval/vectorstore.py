@@ -38,6 +38,7 @@ def build_vectorstore(
         documents=doc_list,
         embedding=embeddings,
         persist_directory=str(path),
+        collection_metadata={"hnsw:space": "cosine"},
     )
 
 
@@ -46,4 +47,5 @@ def load_vectorstore(embeddings: Embeddings, persist_dir: Path | None = None) ->
     return Chroma(
         embedding_function=embeddings,
         persist_directory=str(path),
+        collection_metadata={"hnsw:space": "cosine"},
     )

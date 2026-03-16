@@ -10,7 +10,7 @@ from src.agents.core import (
     analyze_query,
     answer_with_optional_risks,
 )
-from src.config import RETRIEVAL_TOP_K
+from src.config import RETRIEVAL_TOP_K, RETRIEVAL_SCORE_THRESHOLD
 from src.ingest.core import chunk_corpus, load_raw_docs
 from src.llm.factory import make_embeddings
 from src.retrieval.vectorstore import build_vectorstore, load_vectorstore
@@ -89,10 +89,14 @@ async def node_clause_extractor(state: GraphState) -> GraphState:
     # Use a wider retrieval fan-out for risk queries to allow cross-agreement analysis.
     is_risk = state.is_risk_query
     top_k = RETRIEVAL_TOP_K * 2 if is_risk else RETRIEVAL_TOP_K
-    retriever = vs.as_retriever(search_kwargs={"k": top_k})
 
     base_query = state.question or ""
-    all_docs: List[Document] = retriever.invoke(base_query)
+    scored_results = vs.similarity_search_with_relevance_scores(base_query, k=top_k)
+
+    # Keep only chunks whose cosine similarity meets the threshold.
+    all_docs: List[Document] = [
+        doc for doc, score in scored_results if score >= RETRIEVAL_SCORE_THRESHOLD
+    ]
 
     # Reduce phase: de-duplicate and filter to routed document types, if provided.
     seen: set[tuple[str, str, str]] = set()
